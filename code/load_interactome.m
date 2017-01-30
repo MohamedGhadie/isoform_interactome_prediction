@@ -47,7 +47,7 @@ if strcmpi(whichone,'IntAct')
     spGeneMap = cell(size(s.From,1),2);
     for i = 1:size(s.From,1)
         spGeneMap{i,1} = strtrim(s.From(i,:));
-        spGeneMap{i,2} = s.To(i,:);
+        spGeneMap{i,2} = strtrim(s.To(i,:));
     end
     
     % compile list of interacting protein gene names
@@ -97,7 +97,6 @@ elseif strcmpi(whichone,'HI-II-14')
         sp2entrez{i,1} = strtrim(s.From(i,:));
         sp2entrez{i,2} = num2str(s.To(i));
     end
-    sp2entrez(:,2)
     % Create list of Swiss-Prot IDs for all genes in the interactome
     disp('Finding Swiss-Prot IDs for all genes');
     matches = zeros(numGenes,1);
