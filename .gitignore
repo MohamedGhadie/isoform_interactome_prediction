@@ -3,3 +3,4 @@ Data/
 interactome_processed/
 .cache/
 *.gz
+.m~
