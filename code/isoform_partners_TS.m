@@ -5,7 +5,7 @@
 % average, with >50% of the isoforms of their partner. Tissue specificity
 % is calculated using the Tau index.
 
-interactome = 'HI-II-14';
+interactome = 'IntAct';
 load_processed_data = 1;
 save_processed_data = 0;
 processed_data_dir = 'interactome_processed/';
@@ -59,8 +59,7 @@ if processed_data_exists == 0
             DDIs(i,:) = {strtrim(dom1(i,:)), strtrim(dom2(i,:))};
         end
         clear dom1 dom2
-    elseif exist(did3File, 'file') == 2
-        %DDIs = load_3did_DDIs(did3File);
+    elseif (exist(did3File, 'file') == 2) && (exist(domineFile, 'file') == 2)
         DDIs = load_3did_and_domine_DDIs(did3File, domineFile);
         fid = fopen(processedDDIfile,'w');
         fprintf(fid,'dom1\tdom2\n');

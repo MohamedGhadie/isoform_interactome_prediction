@@ -53,14 +53,18 @@ if processed_data_exists == 0
     numPPI = sum(sum(triu(I)));
     numGenes = size(I,1);
     did3File = '3did_flat.txt';
+    domineFile = 'interaction.xlsx';
     processedDDIfile = [processed_data_dir 'DDIs.txt'];
     disp('Loading domain-domain interactions');
     if exist(processedDDIfile, 'file') == 2
         tdfread(processedDDIfile);
-        DDIs = [dom1 dom2];
+        DDIs = cell(size(dom1,1),2);
+        for i = 1:size(dom1,1)
+            DDIs(i,:) = {strtrim(dom1(i,:)), strtrim(dom2(i,:))};
+        end
         clear dom1 dom2
-    elseif exist(did3File, 'file') == 2
-        DDIs = load_3did_DDIs(did3File);
+    elseif (exist(did3File, 'file') == 2) && (exist(domineFile, 'file') == 2)
+        DDIs = load_3did_and_domine_DDIs(did3File, domineFile);
         fid = fopen(processedDDIfile,'w');
         fprintf(fid,'dom1\tdom2\n');
         for i = 1:size(DDIs,1)

@@ -3,7 +3,7 @@ function DDIs = load_3did_and_domine_DDIs(did3File, domineFile)
 DDIs = [];
 
 if exist(domineFile, 'file') == 2
-    domineDDIs = loadDDIs(domineFile);
+    domineDDIs = load_domine_DDIs(domineFile);
 else
     disp(['Domain-domain interaction file ' domineFile ' not found.']);
     return
