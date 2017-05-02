@@ -129,7 +129,7 @@ if processed_data_exists == 0
     [inIsoInteractome, ref_ref_interactions, alt_ref_interactions, ~, ~] = predict_isoform_interactome(spID,domains,PPIs,I,domI,domPrI,numDDImap,altIsoforms,isoInterDomains,interactome,isoformInteractomeFile);
     
     disp('Comparing isoform interaction profiles');
-    [numLosingIsoforms, fracLosingIsoforms, numIsoPairs, fracDiffIsoProfilePerGene, avgIsoProfileDistPerGene] = compare_isoform_interactions(I,domI,domPrI,numDDImap,altIsoforms,numAltIsoforms,isoInterDomains);
+    [numLosingIsoforms, fracLosingIsoforms, numIsoPairs, fracDiffIsoProfilePerGene, avgIsoProfileDistPerGene, allDist] = compare_isoform_interactions(I,domI,domPrI,numDDImap,altIsoforms,numAltIsoforms,isoInterDomains);
     
     if save_processed_data == 1
         if exist(processed_data_dir, 'dir') ~= 7
@@ -150,14 +150,9 @@ if processed_data_exists == 0
     end
 end
 
-fprintf('\nPredicted isoform interactome statistics:\n');
-disp([num2str(length(unique(ref_ref_interactions(:,1:2)))) ' reference proteins and ' num2str(length(unique(alt_ref_interactions(:,1)))) ' alternative isoforms']);
-disp([num2str(size(ref_ref_interactions,1)) ' known reference interactions']);
-disp([num2str(sum(strcmpi(alt_ref_interactions(:,3),'retained'))) ' predicted retained isoform interactions']);
-disp([num2str(sum(strcmpi(alt_ref_interactions(:,3),'lost'))) ' predicted lost isoform interactions']);
-disp([num2str(sum(numAltIsoforms(sum(numDDImap)>0)>0)) ' genes have at least two isoforms (including reference)']);
-disp([num2str(sum(numLosingIsoforms>0)) ' genes have at least one isoform losing an interaction']);
-fprintf('\n');
+display_isoform_interactome_results(I,numDDImap,numAltIsoforms,numIsoPairs,inIsoInteractome,...
+                                    ref_ref_interactions,alt_ref_interactions,numLosingIsoforms,...
+                                    fracLosingIsoforms,fracDiffIsoProfilePerGene,avgIsoProfileDistPerGene, allDist);
 
 % Calculate the mean fraction of isoforms of the same gene each protein interacts with
 disp('Calculating the mean fraction of isoforms of the same gene each protein interacts with');
@@ -402,15 +397,10 @@ disp(['Mean tfraction of tissue-specific proteins among those interacting with <
 x = table([sum(ts1>0.45); sum(ts2>0.45)], ...
     [sum(ts1<=0.45); sum(ts2<=0.45)], ...
     'VariableNames',{'Tissue_specific','Non_tissue_specific'}, ...
-    'RowNames',{'>50% isoform partners','<=50% isoform partners'})
+    'RowNames',{['>=' num2str(cutoff*100) '% isoform partners'],['<' num2str(cutoff*100) '% isoform partners']})
 [h,p,stats] = fishertest(x);
 disp(['Tissue specificity Fisher exact test: p = ' num2str(p)]);
 
 % find overall correlation
 sel = ~isnan(tau_ts) & (numDDIpartners_2plusIso>0);
 [r,~,~,~] = corrcoef([meanIsoInterFraction(sel) tau_ts(sel)],'rows','pairwise')
-        
-% itr = 100000;
-% bootMeanFrac = bootstrapSim(ts2_isoFrac,ts1_isoFrac,itr);
-% p = 2*sum((bootMeanFrac(:,1)-bootMeanFrac(:,2))>=abs(mean(ts2_isoFrac)-mean(ts1_isoFrac)))/size(bootMeanFrac,1);
-% disp(['Tissue specificity bootstrap test  (' num2str(itr) ' resamplings): p = ' num2str(p)]);

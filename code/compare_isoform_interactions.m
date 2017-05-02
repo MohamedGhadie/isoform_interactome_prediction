@@ -1,4 +1,4 @@
-function [numLosingIsoforms, fracLosingIsoforms, numIsoPairs, fracDiffIsoProfilePerGene, avgIsoProfileDistPerGene] = compare_isoform_interactions (I, domI, domPrI, numDDImap, altIsoforms, numAltIsoforms, isoInterDomains)
+function [numLosingIsoforms, fracLosingIsoforms, numIsoPairs, fracDiffIsoProfilePerGene, avgIsoProfileDistPerGene, allDist] = compare_isoform_interactions (I, domI, domPrI, numDDImap, altIsoforms, numAltIsoforms, isoInterDomains)
 
 numGenes = size(I,1);
 inIsoInteractome = zeros(numGenes,1);
@@ -96,49 +96,3 @@ for i = 1:numGenes
 end
 
 numIsoPairs = (((numAltIsoforms+1).^2)-(numAltIsoforms+1))/2;
-disp([num2str(numRefProteins) ' genes with 2 or more isoforms (including reference)']);
-disp([num2str(sum(numLosingIsoforms>0)) ' genes have 1 or more isoforms losing an interaction']);
-disp(['Avg. fraction per gene of isoforms losing interactions: ' num2str(mean(fracLosingIsoforms(~isnan(fracLosingIsoforms))))]); 
-
-disp(['Total number of isoform pairs with different interaction profiles: ' num2str(sum(allDist>0))]);
-disp(['Total number of isoform pairs with identical interaction profiles: ' num2str(sum(allDist==0))]);
-disp(['Avg. fraction per gene of isoform pairs with different profiles: ' num2str(mean(fracDiffIsoProfilePerGene(~isnan(fracDiffIsoProfilePerGene))))]); 
-disp(['Avg. fraction per gene of isoform pairs with identical profiles: ' num2str(mean(1-fracDiffIsoProfilePerGene(~isnan(fracDiffIsoProfilePerGene))))]); 
-disp(['Avg. pair hamming distance over all genes: ' num2str(mean(allDist))]);
-
-figure
-histogram((numAltIsoforms(inIsoInteractome>0)+1));
-%xlim([-0.5 12]);
-%ylim([0 300]);
-xlabel('Number of isoforms');
-ylabel('Number of genes in isoform interactome');
-
-figure
-histogram(numIsoPairs(inIsoInteractome>0),-0.5:1:700.5);
-xlim([-0.5 701.5]);
-xlabel('Number of isoform pairs');
-ylabel('Number of genes in isoform interactome');
-
-figure
-histogram(numLosingIsoforms(~isnan(numLosingIsoforms)));
-%xlim([-0.5 12]);
-xlabel('Number of isoforms losing interaction');
-ylabel('Number of genes with two or more isoforms in isoform interactome');
-
-figure
-histogram(fracLosingIsoforms(~isnan(fracLosingIsoforms)),-0.05:0.1:1.05);
-xlim([-0.05 1.05]);
-xlabel('Fraction of isoforms losing interaction');
-ylabel('Number of genes with two or more isoforms in isoform interactome');
-
-figure
-histogram(fracDiffIsoProfilePerGene(~isnan(fracDiffIsoProfilePerGene)),-0.05:0.1:1.05);
-xlim([-0.05 1.05]);
-xlabel('Fraction of isoform pairs with different interaction profiles');
-ylabel('Number of genes with two or more isoforms in isoform interactome');
-
-figure
-histogram(avgIsoProfileDistPerGene(~isnan(avgIsoProfileDistPerGene)),-0.05:0.1:1.05);
-xlim([-0.05 1.05]);
-xlabel('Average hamming distance of isoform pair');
-ylabel('Number of genes with two or more isoforms in isoform interactome');

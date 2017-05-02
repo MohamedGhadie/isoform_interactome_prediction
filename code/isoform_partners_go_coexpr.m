@@ -133,7 +133,7 @@ if processed_data_exists == 0
     [inIsoInteractome, ref_ref_interactions, alt_ref_interactions, ~, ~] = predict_isoform_interactome(spID,domains,PPIs,I,domI,domPrI,numDDImap,altIsoforms,isoInterDomains,interactome,isoformInteractomeFile);
     
     disp('Comparing isoform interaction profiles');
-    [numLosingIsoforms, fracLosingIsoforms, numIsoPairs, fracDiffIsoProfilePerGene, avgIsoProfileDistPerGene] = compare_isoform_interactions(I,domI,domPrI,numDDImap,altIsoforms,numAltIsoforms,isoInterDomains);
+    [numLosingIsoforms, fracLosingIsoforms, numIsoPairs, fracDiffIsoProfilePerGene, avgIsoProfileDistPerGene, allDist] = compare_isoform_interactions(I,domI,domPrI,numDDImap,altIsoforms,numAltIsoforms,isoInterDomains);
     
     if save_processed_data == 1
         if exist(processed_data_dir, 'dir') ~= 7
@@ -154,14 +154,9 @@ if processed_data_exists == 0
     end
 end
 
-fprintf('\nPredicted isoform interactome statistics:\n');
-disp([num2str(length(unique(ref_ref_interactions(:,1:2)))) ' reference proteins and ' num2str(length(unique(alt_ref_interactions(:,1)))) ' alternative isoforms']);
-disp([num2str(size(ref_ref_interactions,1)) ' known reference interactions']);
-disp([num2str(sum(strcmpi(alt_ref_interactions(:,3),'retained'))) ' predicted retained isoform interactions']);
-disp([num2str(sum(strcmpi(alt_ref_interactions(:,3),'lost'))) ' predicted lost isoform interactions']);
-disp([num2str(sum(numAltIsoforms(sum(numDDImap)>0)>0)) ' genes have at least two isoforms (including reference)']);
-disp([num2str(sum(numLosingIsoforms>0)) ' genes have at least one isoform losing an interaction']);
-fprintf('\n');
+display_isoform_interactome_results(I,numDDImap,numAltIsoforms,numIsoPairs,inIsoInteractome,...
+                                    ref_ref_interactions,alt_ref_interactions,numLosingIsoforms,...
+                                    fracLosingIsoforms,fracDiffIsoProfilePerGene,avgIsoProfileDistPerGene, allDist);
 
 % load gene ontology associations
 if exist('gene_association.goa_ref_human.xlsx', 'file') == 2
