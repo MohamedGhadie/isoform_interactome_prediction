@@ -1,46 +1,77 @@
-% This script first predicts the isoform interactome from the HI-II-14 reference
-% interactome. Then it calculates disease subnetwork similarity for pairs
-% of reference proteins interacting with the same subset of isoforms of the same
-% gene, pairs of reference proteins interacting with different subsets of isoforms of
-% the same gene, and pairs of reference proteins interacting with protein products of
-% different genes. Disease subnetwork similarity is calculated as the
-% fraction (Jaccard similarity index) of disease subnetworks shared by two
-% proteins, where two proteins share a disease subnetwork if each protein or
-% its interaction partner in the HI-II-14 reference interactome not shared
-% with the other protein are associated with the disease.
+% This script first predicts the isoform interactome from either the HI-II-14
+% reference interactome or the IntAct reference interactome. Then it calculates
+% disease similarity for pairs of reference proteins interacting with the same
+% subset of isoforms of the samegene, pairs of reference proteins interacting
+% with different subsets of isoforms of the same gene, and pairs of reference
+% proteins interacting with protein products of different genes. Disease
+% similarity is calculated using the Jaccard similarity index.
 
 load_processed_data = 1;
 save_processed_data = 1;
-calculate_pvalues = 0;
-processed_data_dir = 'interactome_processed';
+processed_data_dir = 'interactome_processed/';
 processed_data_exists = 0;
-if (load_processed_data == 1) && (exist([processed_data_dir '/HI-II-14_data.mat'], 'file') == 2)
-    disp(['Loading interactome processed data from file ' processed_data_dir '/HI-II-14_data.mat']);
-    processed_data_exists = 1;
-    load([processed_data_dir '/HI-II-14_data.mat']);
+calculate_pvalues = 0;
+if strcmpi(interactome,'HI-II-14')
+    if (load_processed_data == 1) && (exist([processed_data_dir 'HI-II-14_data.mat'], 'file') == 2)
+        disp(['Loading interactome processed data from file ' processed_data_dir 'HI-II-14_data.mat']);
+        processed_data_exists = 1;
+        load([processed_data_dir 'HI-II-14_data.mat']);
+    else
+        disp('Loading and processing interactome data');
+        interactomeFile = 'HI-II-14.xlsx';
+        isoformInteractomeFile = [processed_data_dir 'HI-II-14_isoform_interactome.txt'];
+        spEntrezMapFile = 'HI-II-14_spEntrezMap.tab';
+        numTimesReported = 1;
+        removeSelfInteractions = 1;
+        [I, PPIs, spID, genes] = load_interactome(interactomeFile, [], spEntrezMapFile, numTimesReported, removeSelfInteractions, interactome);
+        outputfile = [processed_data_dir 'HI-II-14_data.mat'];
+    end
+elseif strcmpi(interactome,'IntAct')
+    if (load_processed_data == 1) && (exist([processed_data_dir 'IntAct_data.mat'], 'file') == 2)
+        disp(['Loading interactome processed data from file ' processed_data_dir 'IntAct_data.mat']);
+        processed_data_exists = 1;
+        load([processed_data_dir 'IntAct_data.mat']);
+    else
+        disp('Loading and processing interactome data');
+        interactomeFile = 'intact.txt';
+        isoformInteractomeFile = [processed_data_dir 'IntAct_isoform_interactome.txt'];
+        spGeneMapFile = 'IntAct_spGeneMap.tab.txt';
+        numTimesReported = 2;
+        removeSelfInteractions = 1;
+        [I, PPIs, spID, genes] = load_interactome(interactomeFile, spGeneMapFile, [], numTimesReported, removeSelfInteractions, interactome);
+        outputfile = [processed_data_dir 'IntAct_data.mat'];
+    end
 else
-    disp('Loading and processing interactome data');
-    interactome = 'HI-II-14';
-    interactomeFile = 'HI-II-14.xlsx';
-    isoformInteractomeFile = 'HI-II-14_isoform_interactome';
-    spEntrezMapFile = 'HI-II-14_spEntrezMap.tab';
-    numTimesReported = 1;
-    removeSelfInteractions = 1;
-    [I, spID, genes] = load_interactome(interactomeFile, [], spEntrezMapFile, numTimesReported, removeSelfInteractions, interactome);
-    outputfile = [processed_data_dir '/HI-II-14_data.mat'];
+    disp('Invalid interactome name. Exiting script');
+    return
 end
 
 if processed_data_exists == 0
     numPPI = sum(sum(triu(I)));
     numGenes = size(I,1);
-%     if exist('interaction.xlsx', 'file') == 2
-%         disp('Loading domain-domain interactions');
-%         DDIs = loadDDIs('interaction.xlsx');
-%     else
-%         disp('Domain-domain interaction file (interaction.xlsx) not found. Exiting script');
-%         return
-%     end
-    load([processed_data_dir '/did3_DDIs.mat']);
+    did3File = '3did_flat.txt';
+    domineFile = 'interaction.xlsx';
+    processedDDIfile = [processed_data_dir 'DDIs.txt'];
+    disp('Loading domain-domain interactions');
+    if exist(processedDDIfile, 'file') == 2
+        tdfread(processedDDIfile);
+        DDIs = cell(size(dom1,1),2);
+        for i = 1:size(dom1,1)
+            DDIs(i,:) = {strtrim(dom1(i,:)), strtrim(dom2(i,:))};
+        end
+        clear dom1 dom2
+    elseif (exist(did3File, 'file') == 2) && (exist(domineFile, 'file') == 2)
+        DDIs = load_3did_and_domine_DDIs(did3File, domineFile);
+        fid = fopen(processedDDIfile,'w');
+        fprintf(fid,'dom1\tdom2\n');
+        for i = 1:size(DDIs,1)
+            fprintf(fid,[DDIs{i,1} '\t' DDIs{i,2} '\n']);
+        end
+        fclose(fid);
+    else
+        disp('Domain-domain interaction file not found. Exiting script');
+        return
+    end
     domains = unique([DDIs(:,1); DDIs(:,2)]);
     numDom = length(domains);
     
@@ -96,7 +127,7 @@ if processed_data_exists == 0
     numCommonPartners = get_num_common_partners(I);
     
     disp('Predicting isoform interactome');
-    [inIsoInteractome, ref_ref_interactions, alt_ref_interactions, ~, ~] = predict_isoform_interactome(spID,I,domI,domPrI,numDDImap,altIsoforms,isoInterDomains,isoformInteractomeFile);
+    [inIsoInteractome, ref_ref_interactions, alt_ref_interactions, ~, ~] = predict_isoform_interactome(spID,domains,PPIs,I,domI,domPrI,numDDImap,altIsoforms,isoInterDomains,interactome,isoformInteractomeFile);
     
     disp('Comparing isoform interaction profiles');
     [numLosingIsoforms, fracLosingIsoforms, numIsoPairs, fracDiffIsoProfilePerGene, avgIsoProfileDistPerGene] = compare_isoform_interactions(I,domI,domPrI,numDDImap,altIsoforms,numAltIsoforms,isoInterDomains);
@@ -105,12 +136,17 @@ if processed_data_exists == 0
         if exist(processed_data_dir, 'dir') ~= 7
             mkdir(processed_data_dir);
         end
-        save(outputfile,'interactome','interactomeFile','isoformInteractomeFile', 'spEntrezMapFile', 'numTimesReported',...
-            'removeSelfInteractions', 'I', 'spID', 'genes', 'numPPI', 'numGenes', 'DDIs', 'domains', 'numDom', 'refDomMap',...
+        save(outputfile,'interactome','interactomeFile','isoformInteractomeFile', 'numTimesReported', 'removeSelfInteractions',...
+            'PPIs', 'I', 'spID', 'genes', 'numPPI', 'numGenes', 'DDIs', 'domains', 'numDom', 'refDomMap',...
             'domRefPos', 'domAltMap', 'domAltPos', 'headers', 'prSeq', 'isoSeq', 'isoNames', 'altIsoforms', 'numAltIsoforms',...
             'maxIsoform', 'isoInterDomains', 'domI', 'domPrI', 'numDDImap', 'numCommonPartners', 'inIsoInteractome',...
             'ref_ref_interactions', 'alt_ref_interactions', 'numLosingIsoforms', 'fracLosingIsoforms', 'numIsoPairs',...
             'fracDiffIsoProfilePerGene', 'avgIsoProfileDistPerGene');
+        if strcmpi(interactome,'HI-II-14')
+            save(outputfile, 'spEntrezMapFile', '-append');
+        elseif strcmpi(interactome,'IntAct')
+            save(outputfile, 'spGeneMapFile', '-append');
+        end
         disp(['Interactome processed data saved to file ' outputfile]);
     end
 end
