@@ -26,9 +26,6 @@ for i = 1:size(I,1)
             numPartners = length(partners);
             if numPartners > 1
                 for j = 1:numPartners-1
-                    if numPartners > 10
-                            [i numPartners j]
-                    end
                     p2domains = find(domPrI(:,partners(j)));
                     p2domPartners = p1domains(sum(domI(p2domains,p1domains),1)>0);
                     numP2domPartners = length(p2domPartners);

@@ -1,55 +1,153 @@
+% This script first predicts the isoform interactome from the reference
+% interactome, either HI-II-14 or IntAct interactome. Then it calculates GO
+% association similarity and co-expression for pairs of proteins interacting 
+% with the same subset of isoforms of the same gene, pairs of proteins
+% interacting with different subsets of isoforms of the same gene, and
+% pairs of proteins interacting with protein products of different genes.
+% GO similarity is calculated as the fraction (Jaccard similarity index) of
+% GO terms shared by the two proteins. Co-expression is calculated as
+% Pearson's correlation.
 
 interactome = 'IntAct';
-disp('Loading reference interactome');
+load_processed_data = 1;
+save_processed_data = 1;
+processed_data_dir = 'interactome_processed/';
+processed_data_exists = 0;
 if strcmpi(interactome,'HI-II-14')
-    interactomeFile = 'HI-II-14.xlsx';
-    isoformInteractomeFile = 'HI-II-14_isoform_interactome';
-    spEntrezMapFile = 'rolland_spEntrezMap.tab';
-    numTimesReported = 1;
-    removeSelfInteractions = 1;
-    [I, spID, genes] = load_interactome(interactomeFile, [], spEntrezMapFile, numTimesReported, removeSelfInteractions, interactome);
+    if (load_processed_data == 1) && (exist([processed_data_dir 'HI-II-14_data.mat'], 'file') == 2)
+        disp(['Loading interactome processed data from file ' processed_data_dir 'HI-II-14_data.mat']);
+        processed_data_exists = 1;
+        load([processed_data_dir 'HI-II-14_data.mat']);
+    else
+        disp('Loading and processing interactome data');
+        interactomeFile = 'HI-II-14.xlsx';
+        isoformInteractomeFile = [processed_data_dir 'HI-II-14_isoform_interactome.txt'];
+        spEntrezMapFile = 'HI-II-14_spEntrezMap.tab';
+        numTimesReported = 1;
+        removeSelfInteractions = 1;
+        [I, PPIs, spID, genes] = load_interactome(interactomeFile, [], spEntrezMapFile, numTimesReported, removeSelfInteractions, interactome);
+        outputfile = [processed_data_dir 'HI-II-14_data.mat'];
+    end
 elseif strcmpi(interactome,'IntAct')
-    interactomeFile = 'intact.txt';
-    isoformInteractomeFile = 'IntAct_isoform_interactome';
-    spGeneMapFile = 'intact_spGeneMap.tab.txt';
-    numTimesReported = 2;
-    removeSelfInteractions = 1;
-    [I, spID, genes] = load_interactome(interactomeFile, spGeneMapFile, [], numTimesReported, removeSelfInteractions, interactome);
+    if (load_processed_data == 1) && (exist([processed_data_dir 'IntAct_data.mat'], 'file') == 2)
+        disp(['Loading interactome processed data from file ' processed_data_dir 'IntAct_data.mat']);
+        processed_data_exists = 1;
+        load([processed_data_dir 'IntAct_data.mat']);
+    else
+        disp('Loading and processing interactome data');
+        interactomeFile = 'intact.txt';
+        isoformInteractomeFile = [processed_data_dir 'IntAct_isoform_interactome.txt'];
+        spGeneMapFile = 'IntAct_spGeneMap.tab.txt';
+        numTimesReported = 2;
+        removeSelfInteractions = 1;
+        [I, PPIs, spID, genes] = load_interactome(interactomeFile, spGeneMapFile, [], numTimesReported, removeSelfInteractions, interactome);
+        outputfile = [processed_data_dir 'IntAct_data.mat'];
+    end
+else
+    disp('Invalid interactome name. Exiting script');
+    return
 end
-numPPI = sum(sum(triu(I)));
-numGenes = size(I,1);
 
-disp('Loading domain-domain interactions');
-DDIs = loadDDIs('interaction.xlsx');
-domains = unique([DDIs(:,1); DDIs(:,2)]);
-numDom = length(domains);
-disp('Loading structural domains for reference proteins');
-[refDomMap, domRefPos] = load_hmmscan_ref('hmmer_canonical_full.domtab2.txt');
-disp('Loading structural domains for alternative isoforms');
-% Remove all leading and trailing lines other than raw data from hmmer scan file before loading
-% Loading will start from first line
-[domAltMap, domAltPos] = load_hmmscan_alt('hmmer_isoforms.domtab2.txt');
-disp('Loading reference protein sequences');
-[headers, prSeq] = load_ref_protein_seq('human_protein_sequences.tab');
-disp('Loading alternative isoform sequences');
-isoSeq = load_alt_protein_seq('human_protein_can_iso_sequences.fasta');
-isoNames = unique(isoSeq(:,1));
-disp('Counting number of alternative isoforms per gene');
-[altIsoforms, numAltIsoforms, maxIsoform] = getIsoforms(spID, isoNames);
-disp('Identifying isoform interacting domains');
-isoInterDomains = get_isoform_interacting_domains(spID, maxIsoform, domains, refDomMap, domAltMap);
-disp('Creating domain interaction matrix');
-domI = create_DDI_matrix(domains, DDIs);
-disp('Creating domain-protein mapping matrix');
-domPrI = create_domain_protein_matrix(domains, refDomMap, spID);
-disp('Counting number of domain-domain interactions mapping to each protein-protein interaction');
-numDDImap = create_numDDI_matrix(I, domPrI, domI);
-disp('Calculating number of common partners for each pair of reference proteins');
-numCommonPartners = get_num_common_partners(I);
-disp('Predicting isoform interactome');
-[inIsoInteractome, ref_ref_interactions, alt_ref_interactions, ~, ~] = predict_isoform_interactome(spID,I,domI,domPrI,numDDImap,altIsoforms,isoInterDomains,isoformInteractomeFile);
-disp('Comparing isoform interaction profiles');
-[numLosingIsoforms, fracLosingIsoforms, numIsoPairs, fracDiffIsoProfilePerGene, avgIsoProfileDistPerGene] = compare_isoform_interactions(I,domI,domPrI,numDDImap,altIsoforms,numAltIsoforms,isoInterDomains);
+if processed_data_exists == 0
+    numPPI = sum(sum(triu(I)));
+    numGenes = size(I,1);
+    did3File = '3did_flat.txt';
+    processedDDIfile = [processed_data_dir 'DDIs.txt'];
+    disp('Loading domain-domain interactions');
+    if exist(processedDDIfile, 'file') == 2
+        tdfread(processedDDIfile);
+        DDIs = [dom1 dom2];
+        clear dom1 dom2
+    elseif exist(did3File, 'file') == 2
+        DDIs = load_3did_DDIs(did3File);
+        fid = fopen(processedDDIfile,'w');
+        fprintf(fid,'dom1\tdom2\n');
+        for i = 1:size(DDIs,1)
+            fprintf(fid,[DDIs{i,1} '\t' DDIs{i,2} '\n']);
+        end
+        fclose(fid);
+    else
+        disp('Domain-domain interaction file not found. Exiting script');
+        return
+    end
+    domains = unique([DDIs(:,1); DDIs(:,2)]);
+    numDom = length(domains);
+    
+    if exist('hmmer_canonical_full.domtab.txt', 'file') == 2
+        disp('Loading structural domains for reference proteins');
+        [refDomMap, domRefPos] = load_hmmscan_ref('hmmer_canonical_full.domtab.txt');
+    else
+        disp('Reference-isoform Domain-mapping file (hmmer_isoforms.domtab.txt) not found. Exiting script');
+        return
+    end
+    
+    if exist('hmmer_isoforms.domtab.txt', 'file') == 2
+        disp('Loading structural domains for alternative isoforms');
+        [domAltMap, domAltPos] = load_hmmscan_alt('hmmer_isoforms.domtab.txt');
+    else
+        disp('Alternative-isoform Domain-mapping file (hmmer_isoforms.domtab.txt) not found. Exiting script');
+        return
+    end
+    
+    if exist('human_protein_sequences.tab', 'file') == 2
+        disp('Loading reference protein sequences');
+        [headers, prSeq] = load_ref_protein_seq('human_protein_sequences.tab');
+    else
+        disp('Human reference protein sequence file (human_protein_sequences.tab) not found. Exiting script');
+        return
+    end
+    
+    if exist('human_protein_can_iso_sequences.fasta', 'file') == 2
+        disp('Loading alternative isoform sequences');
+        isoSeq = load_alt_protein_seq('human_protein_can_iso_sequences.fasta');
+    else
+        disp('Human alternative protein sequence file (human_protein_can_iso_sequences.fasta) not found. Exiting script');
+        return
+    end
+    isoNames = unique(isoSeq(:,1));
+    
+    disp('Counting number of alternative isoforms per gene');
+    [altIsoforms, numAltIsoforms, maxIsoform] = getIsoforms(spID, isoNames);
+    
+    disp('Identifying isoform interacting domains');
+    isoInterDomains = get_isoform_interacting_domains(spID, maxIsoform, domains, refDomMap, domAltMap);
+    
+    disp('Creating domain interaction matrix');
+    domI = create_DDI_matrix(domains, DDIs);
+    
+    disp('Creating domain-protein mapping matrix');
+    domPrI = create_domain_protein_matrix(domains, refDomMap, spID);
+    
+    disp('Counting number of domain-domain interactions mapping to each protein-protein interaction');
+    numDDImap = create_numDDI_matrix(I, domPrI, domI);
+    
+    disp('Calculating number of common partners for each pair of reference proteins');
+    numCommonPartners = get_num_common_partners(I);
+    
+    disp('Predicting isoform interactome');
+    [inIsoInteractome, ref_ref_interactions, alt_ref_interactions, ~, ~] = predict_isoform_interactome(spID,domains,PPIs,I,domI,domPrI,numDDImap,altIsoforms,isoInterDomains,interactome,isoformInteractomeFile);
+    
+    disp('Comparing isoform interaction profiles');
+    [numLosingIsoforms, fracLosingIsoforms, numIsoPairs, fracDiffIsoProfilePerGene, avgIsoProfileDistPerGene] = compare_isoform_interactions(I,domI,domPrI,numDDImap,altIsoforms,numAltIsoforms,isoInterDomains);
+    
+    if save_processed_data == 1
+        if exist(processed_data_dir, 'dir') ~= 7
+            mkdir(processed_data_dir);
+        end
+        save(outputfile,'interactome','interactomeFile','isoformInteractomeFile', 'numTimesReported', 'removeSelfInteractions',...
+            'PPIs', 'I', 'spID', 'genes', 'numPPI', 'numGenes', 'DDIs', 'domains', 'numDom', 'refDomMap',...
+            'domRefPos', 'domAltMap', 'domAltPos', 'headers', 'prSeq', 'isoSeq', 'isoNames', 'altIsoforms', 'numAltIsoforms',...
+            'maxIsoform', 'isoInterDomains', 'domI', 'domPrI', 'numDDImap', 'numCommonPartners', 'inIsoInteractome',...
+            'ref_ref_interactions', 'alt_ref_interactions', 'numLosingIsoforms', 'fracLosingIsoforms', 'numIsoPairs',...
+            'fracDiffIsoProfilePerGene', 'avgIsoProfileDistPerGene');
+        if strcmpi(interactome,'HI-II-14')
+            save(outputfile, 'spEntrezMapFile', '-append');
+        elseif strcmpi(interactome,'IntAct')
+            save(outputfile, 'spGeneMapFile', '-append');
+        end
+        disp(['Interactome processed data saved to file ' outputfile]);
+    end
+end
 
 fprintf('\nPredicted isoform interactome statistics:\n');
 disp([num2str(length(unique(ref_ref_interactions(:,1:2)))) ' reference proteins and ' num2str(length(unique(alt_ref_interactions(:,1)))) ' alternative isoforms']);
@@ -61,10 +159,18 @@ disp([num2str(sum(numLosingIsoforms>0)) ' genes have at least one isoform losing
 fprintf('\n');
 
 % load gene ontology associations
-disp('Loading gene ontology associations');
-[~,gene_association_a] = xlsread('gene_association.goa_ref_human_a.xlsx');
-[~,gene_association_b] = xlsread('gene_association.goa_ref_human_b.xlsx');
-gene_associations = [gene_association_a; gene_association_b];
+if exist('gene_association.goa_ref_human.xlsx', 'file') == 2
+    disp('Loading gene ontology associations');
+    [~,gene_associations] = xlsread('gene_association.goa_ref_human.xlsx');
+elseif (exist('gene_association.goa_ref_human_a.xlsx', 'file') == 2) && (exist('gene_association.goa_ref_human_b.xlsx', 'file') == 2)
+    disp('Loading gene ontology associations');
+    [~,gene_association_a] = xlsread('gene_association.goa_ref_human_a.xlsx');
+    [~,gene_association_b] = xlsread('gene_association.goa_ref_human_b.xlsx');
+    gene_associations = [gene_association_a; gene_association_b];
+else
+    disp('Human gene ontology file (ene_association.goa_ref_human.xlsx) not found. Exiting script');
+    return
+end
 
 disp('Identifying GO aspect for each GO term');
 GOterms = unique(gene_associations(:,5));
@@ -99,9 +205,14 @@ numPrGOPterms = sum(prGO(:,GOaspects=='P'),2);
 numPrGOCterms = sum(prGO(:,GOaspects=='C'),2);
 
 % load gene tissue expression data
-disp('Loading gene tissue-expression data');
 tissueExpressionFile = 'E-MTAB-513.tsv.txt';
-tdfread(tissueExpressionFile);
+if exist(tissueExpressionFile, 'file') == 2
+    disp('Loading gene tissue-expression data');
+    tdfread(tissueExpressionFile);
+else
+    disp('Human gene ontology file (ene_association.goa_ref_human.xlsx) not found. Exiting script');
+    return
+end
 expr = [adipose adrenal brain breast colon heart kidney leukocyte liver lung lymph_node ovary prostate skeletal_muscle testis thyroid];
 expr = log2(expr);
 clear adipose adrenal brain breast colon heart kidney leukocyte liver lung lymph_node ovary prostate skeletal_muscle testis thyroid
@@ -150,19 +261,17 @@ clear i ind tobeRemoved expr_gene_id expr_gene_names c
 
 [pairs,selected,nodiffTargets,subsetTargets,changeoverTargets] = label_iso_partner_pairs(spID,I,domI,domPrI,isoInterDomains,numDDImap,maxIsoform);
 
-category = {'no-difference','subset','changeover'};
-
 nodiff_pairs = pairs(selected(:,1) & ~selected(:,2) & ~selected(:,3),:);
 diff_pairs = pairs(~selected(:,1) & (selected(:,2)|selected(:,3)),:);
-
-disp([num2str(size(nodiff_pairs,1)) ' protein pairs interacting with the same subset of isoforms of the same gene']);
-disp([num2str(size(diff_pairs,1)) ' protein pairs interacting with different subsets of isoforms of the same gene']);
 
 [numNodiffPairsRepeated, nodiff_pairs] = remove_gene_pair_duplicates(nodiff_pairs,genes);
 disp([num2str(numNodiffPairsRepeated) ' protein pairs with identical isoform interaction profiles occur more than once with different uniProt IDs: duplicates removed']);
 
 [numDiffPairsRepeated, diff_pairs] = remove_gene_pair_duplicates(diff_pairs,genes);
 disp([num2str(numDiffPairsRepeated) ' protein pairs with different isoform interaction profiles occur more than once with different uniProt IDs: duplicates removed']);
+
+disp([num2str(size(nodiff_pairs,1)) ' protein pairs interacting with the same subset of isoforms of the same gene']);
+disp([num2str(size(diff_pairs,1)) ' protein pairs interacting with different subsets of isoforms of the same gene']);
 
 % coexpression and GO similarity of pairs of proteins interacting with the
 % same subset of isoforms of the same gene
@@ -226,14 +335,22 @@ for i = 1:size(diff_pairs,1)
     end
 end
 
-if ~isempty(dir('diffGene_gosim.mat'))
+if strcmpi(interactome,'HI-II-14')
+    diffGene_gosim_file = [processed_data_dir 'HI-II-14_diffGene_gosim.mat'];
+    diffGene_coexpr_file = [processed_data_dir 'HI-II-14_diffGene_coexpr.mat'];
+elseif strcmpi(interactome,'IntAct')
+    diffGene_gosim_file = [processed_data_dir 'IntAct_diffGene_gosim.mat'];
+    diffGene_coexpr_file = [processed_data_dir 'IntAct_diffGene_coexpr.mat'];
+end
+
+if (load_processed_data == 1) && (exist(diffGene_gosim_file, 'file') == 2)
     % load GO similarity of protein partners of products of different genes
-    load diffGene_gosim.mat
+    disp(['Loading GO similarity results for partners of protein products of different genes from file ' diffGene_gosim_file]);
+    load(diffGene_gosim_file)
 else
     % calculates GO similarity of all protein pairs that have no
     % common partner. May take several hours
     disp('Calculating GO similarity of pairs of proteins interacting with products of different genes');
-    disp('Results will be saved in file diffGene_gosim.mat');
     numNeighbors = sum(I,2);
     maxsum = cumsum(1:numGenes-1);
     maxnum = maxsum(numGenes-1);
@@ -248,6 +365,9 @@ else
     Pind = GOaspects=='P';
     Cind = GOaspects=='C';
     for i = 1:numGenes-1
+        if ~mod(i,1000)
+            disp(['- Calculated GO similarity for ' num2str(i) ' genes out of ' num2str(numGenes) ' genes']);
+        end
         if numNeighbors(i)>0
             for j = i+1:numGenes
                 if numNeighbors(j) > 0
@@ -277,21 +397,27 @@ else
     diffGene_gofsim = diffGene_gofsim(1:cf);
     diffGene_gopsim = diffGene_gopsim(1:cp);
     diffGene_gocsim = diffGene_gocsim(1:cc);
-    save diffGene_gosim.mat diffGene_gosim diffGene_gofsim diffGene_gopsim diffGene_gocsim
+    if save_processed_data == 1
+        save(diffGene_gosim_file, 'diffGene_gosim', 'diffGene_gofsim', 'diffGene_gopsim', 'diffGene_gocsim')
+        disp(['GO similarity results for partners of protein products of different genes were saved in file ' diffGene_gosim_file]);
+    end
 end
 
-if ~isempty(dir('diffGene_coexpr.mat'))
+if (load_processed_data == 1) && (exist(diffGene_coexpr_file, 'file') == 2)
     % load coexpression of protein partners of products of different genes
-    load diffGene_coexpr.mat
+    disp(['Loading co-expression results for partners of protein products of different genes from file ' diffGene_coexpr_file]);
+    load(diffGene_coexpr_file)
 else
-    disp('Calculating coexpression of pairs of proteins interacting with products of different genes');
-    disp('Results will be saved in file diffGene_coexpr.mat');
+    disp('Calculating tissue co-expression of pairs of proteins interacting with products of different genes');
     numNeighbors = sum(I,2);
     maxsum = cumsum(1:numGenes-1);
     maxnum = maxsum(numGenes-1);
     diffGene_coexpr = zeros(1,maxnum);
     c = 0;
     for i = 1:numGenes-1
+        if ~mod(i,1000)
+            disp(['- Calculated tissue co-expression for ' num2str(i) ' genes out of ' num2str(numGenes) ' genes']);
+        end
         if sum(~isnan(Iexpr(i,:)))>7 && numNeighbors(i)>0
             for j = i+1:numGenes
                 if numNeighbors(j) > 0
@@ -316,7 +442,10 @@ else
         end
     end
     diffGene_coexpr = diffGene_coexpr(1:c);
-    save diffGene_coexpr.mat diffGene_coexpr
+    if save_processed_data == 1
+        save(diffGene_coexpr_file, 'diffGene_coexpr');
+        disp(['Coexpression results for partners of protein products of different genes were saved in file ' diffGene_coexpr_file]);
+    end
 end
 
 fprintf('\n');
@@ -358,9 +487,9 @@ set(hb(3),'facecolor',[1 0 0]);
 ylim([0 0.35]);
 set(gca,'XTick',1:4,'XTickLabel',{'   All three\newlineGO aspects','Molecular\newline function','Biological\newline process','  Cellular\newlinecomponent'},'FontSize',28);
 ylabel('GO similarity of pairs of proteins','FontSize',28);
-legend({'Pairs of proteins interacting with the same subset of isoforms of the same gene',...
-    'Pairs of proteins interacting with different subsets of isoforms of the same gene',...
-    'Pairs of proteins interacting with protein products of different genes'},'FontSize',28);
+% legend({'Pairs of proteins interacting with the same subset of isoforms of the same gene',...
+%     'Pairs of proteins interacting with different subsets of isoforms of the same gene',...
+%     'Pairs of proteins interacting with protein products of different genes'},'FontSize',28);
 set(gca,'YGrid','on');
 set(gca,'tickDir','out');
 box off
@@ -400,47 +529,41 @@ clear hb ib j xData plotdata sderror
 %-------------------------------------------------------------------------
 % Calculate p-values using bootstrapping
 
-itr = 100000;
-disp('Significance in difference between pairs with identical and different isoform interaction profiles:');
-bootMeanSim = bootstrapSim(nodiff_gosim,diff_gosim,itr);
-p1 = 2*sum((bootMeanSim(:,1)-bootMeanSim(:,2))>=abs(mean(nodiff_gosim)-mean(diff_gosim)))/size(bootMeanSim,1);
-disp(['All GO categories bootstrap test: p = ' num2str(p1)]);
-bootMeanSim = bootstrapSim(nodiff_gofsim,diff_gofsim,itr);
-p2 = 2*sum((bootMeanSim(:,1)-bootMeanSim(:,2))>=abs(mean(nodiff_gofsim)-mean(diff_gofsim)))/size(bootMeanSim,1);
-disp(['Molecular function bootstrap test: p = ' num2str(p2)]);
-bootMeanSim = bootstrapSim(nodiff_gopsim,diff_gopsim,itr);
-p3 = 2*sum((bootMeanSim(:,1)-bootMeanSim(:,2))>=abs(mean(nodiff_gopsim)-mean(diff_gopsim)))/size(bootMeanSim,1);
-disp(['Biological process bootstrap test: p = ' num2str(p3)]);
-bootMeanSim = bootstrapSim(nodiff_gocsim,diff_gocsim,itr);
-p4 = 2*sum((bootMeanSim(:,1)-bootMeanSim(:,2))>=abs(mean(nodiff_gocsim)-mean(diff_gocsim)))/size(bootMeanSim,1);
-disp(['Cellular component bootstrap test: p = ' num2str(p4)]);
-bootMeanCoexpr = bootstrapSim(nodiff_coexpr,diff_coexpr,itr);
-p5 = 2*sum((bootMeanCoexpr(:,1)-bootMeanCoexpr(:,2))>=abs(mean(nodiff_coexpr)-mean(diff_coexpr)))/size(bootMeanCoexpr,1);
-disp(['All GO categories bootstrap test (' num2str(itr) ' resamplings): p = ' num2str(p1)]);
-disp(['Molecular function bootstrap test (' num2str(itr) ' resamplings): p = ' num2str(p2)]);
-disp(['Biological process bootstrap test (' num2str(itr) ' resamplings): p = ' num2str(p3)]);
-disp(['Cellular component bootstrap test (' num2str(itr) ' resamplings): p = ' num2str(p4)]);
-disp(['Coexpression bootstrap test  (' num2str(itr) ' resamplings): p = ' num2str(p5)]);
-
-itr = 100;
-disp('Significance in difference between pairs with different isoform interaction profiles');
-disp('and partners of products of different genes:');
-bootMeanSim = bootstrapSim(diff_gosim,diffGene_gosim,itr);
-p1 = 2*sum((bootMeanSim(:,1)-bootMeanSim(:,2))>=abs(mean(diff_gosim)-mean(diffGene_gosim)))/size(bootMeanSim,1);
-disp(['All GO categories bootstrap test: p = ' num2str(p1)]);
-bootMeanSim = bootstrapSim(diff_gofsim,diffGene_gofsim,itr);
-p2 = 2*sum((bootMeanSim(:,1)-bootMeanSim(:,2))>=abs(mean(diff_gofsim)-mean(diffGene_gofsim)))/size(bootMeanSim,1);
-disp(['Molecular function bootstrap test: p = ' num2str(p2)]);
-bootMeanSim = bootstrapSim(diff_gopsim,diffGene_gopsim,itr);
-p3 = 2*sum((bootMeanSim(:,1)-bootMeanSim(:,2))>=abs(mean(diff_gopsim)-mean(diffGene_gopsim)))/size(bootMeanSim,1);
-disp(['Biological process bootstrap test: p = ' num2str(p3)]);
-bootMeanSim = bootstrapSim(diff_gocsim,diffGene_gocsim,itr);
-p4 = 2*sum((bootMeanSim(:,1)-bootMeanSim(:,2))>=abs(mean(diff_gocsim)-mean(diffGene_gocsim)))/size(bootMeanSim,1);
-disp(['Cellular component bootstrap test: p = ' num2str(p4)]);
-bootMeanCoexpr = bootstrapSim(diff_coexpr,diffGene_coexpr,itr);
-p5 = 2*sum((bootMeanCoexpr(:,1)-bootMeanCoexpr(:,2))>=abs(mean(diff_coexpr)-mean(diffGene_coexpr)))/size(bootMeanCoexpr,1);
-disp(['All GO categories bootstrap test (' num2str(itr) ' resamplings): p = ' num2str(p1)]);
-disp(['Molecular function bootstrap test (' num2str(itr) ' resamplings): p = ' num2str(p2)]);
-disp(['Biological process bootstrap test (' num2str(itr) ' resamplings): p = ' num2str(p3)]);
-disp(['Cellular component bootstrap test (' num2str(itr) ' resamplings): p = ' num2str(p4)]);
-disp(['Coexpression bootstrap test  (' num2str(itr) ' resamplings): p = ' num2str(p5)]);
+if calculate_pvalues == 1
+    itr = 100000;
+    disp('Significance in difference between pairs with identical and different isoform interaction profiles:');
+    bootMeanSim = bootstrapSim(nodiff_gosim,diff_gosim,itr);
+    p1 = 2*sum((bootMeanSim(:,1)-bootMeanSim(:,2))>=abs(mean(nodiff_gosim)-mean(diff_gosim)))/size(bootMeanSim,1);
+    disp(['All GO categories bootstrap test (' num2str(itr) ' resamplings): p = ' num2str(p1)]);
+    bootMeanSim = bootstrapSim(nodiff_gofsim,diff_gofsim,itr);
+    p2 = 2*sum((bootMeanSim(:,1)-bootMeanSim(:,2))>=abs(mean(nodiff_gofsim)-mean(diff_gofsim)))/size(bootMeanSim,1);
+    disp(['Molecular function bootstrap test (' num2str(itr) ' resamplings): p = ' num2str(p2)]);
+    bootMeanSim = bootstrapSim(nodiff_gopsim,diff_gopsim,itr);
+    p3 = 2*sum((bootMeanSim(:,1)-bootMeanSim(:,2))>=abs(mean(nodiff_gopsim)-mean(diff_gopsim)))/size(bootMeanSim,1);
+    disp(['Biological process bootstrap test (' num2str(itr) ' resamplings): p = ' num2str(p3)]);
+    bootMeanSim = bootstrapSim(nodiff_gocsim,diff_gocsim,itr);
+    p4 = 2*sum((bootMeanSim(:,1)-bootMeanSim(:,2))>=abs(mean(nodiff_gocsim)-mean(diff_gocsim)))/size(bootMeanSim,1);
+    disp(['Cellular component bootstrap test (' num2str(itr) ' resamplings): p = ' num2str(p4)]);
+    bootMeanCoexpr = bootstrapSim(nodiff_coexpr,diff_coexpr,itr);
+    p5 = 2*sum((bootMeanCoexpr(:,1)-bootMeanCoexpr(:,2))>=abs(mean(nodiff_coexpr)-mean(diff_coexpr)))/size(bootMeanCoexpr,1);
+    disp(['Coexpression bootstrap test  (' num2str(itr) ' resamplings): p = ' num2str(p5)]);
+    
+    itr = 1000;
+    disp('Significance in difference between pairs with different isoform interaction profiles');
+    disp('and partners of products of different genes:');
+    bootMeanSim = bootstrapSim(diff_gosim,diffGene_gosim,itr);
+    p1 = 2*sum((bootMeanSim(:,1)-bootMeanSim(:,2))>=abs(mean(diff_gosim)-mean(diffGene_gosim)))/size(bootMeanSim,1);
+    disp(['All GO categories bootstrap test (' num2str(itr) ' resamplings): p = ' num2str(p1)]);
+    bootMeanSim = bootstrapSim(diff_gofsim,diffGene_gofsim,itr);
+    p2 = 2*sum((bootMeanSim(:,1)-bootMeanSim(:,2))>=abs(mean(diff_gofsim)-mean(diffGene_gofsim)))/size(bootMeanSim,1);
+    disp(['Molecular function bootstrap test (' num2str(itr) ' resamplings): p = ' num2str(p2)]);
+    bootMeanSim = bootstrapSim(diff_gopsim,diffGene_gopsim,itr);
+    p3 = 2*sum((bootMeanSim(:,1)-bootMeanSim(:,2))>=abs(mean(diff_gopsim)-mean(diffGene_gopsim)))/size(bootMeanSim,1);
+    disp(['Biological process bootstrap test (' num2str(itr) ' resamplings): p = ' num2str(p3)]);
+    bootMeanSim = bootstrapSim(diff_gocsim,diffGene_gocsim,itr);
+    p4 = 2*sum((bootMeanSim(:,1)-bootMeanSim(:,2))>=abs(mean(diff_gocsim)-mean(diffGene_gocsim)))/size(bootMeanSim,1);
+    disp(['Cellular component bootstrap test (' num2str(itr) ' resamplings): p = ' num2str(p4)]);
+    bootMeanCoexpr = bootstrapSim(diff_coexpr,diffGene_coexpr,itr);
+    p5 = 2*sum((bootMeanCoexpr(:,1)-bootMeanCoexpr(:,2))>=abs(mean(diff_coexpr)-mean(diffGene_coexpr)))/size(bootMeanCoexpr,1);
+    disp(['Coexpression bootstrap test  (' num2str(itr) ' resamplings): p = ' num2str(p5)]);
+end
