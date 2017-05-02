@@ -11,6 +11,7 @@
 interactome = 'IntAct';
 load_processed_data = 1;
 save_processed_data = 1;
+calculate_pvalues = 1;
 processed_data_dir = 'interactome_processed/';
 processed_data_exists = 0;
 if strcmpi(interactome,'HI-II-14')

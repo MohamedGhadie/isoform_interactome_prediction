@@ -6,12 +6,13 @@
 % different genes. Disease subnetwork similarity is calculated as the
 % fraction (Jaccard similarity index) of disease subnetworks shared by two
 % proteins, where two proteins share a disease subnetwork if each protein or
-% its interaction partner in the HI-II-14 reference interactome not shared
-% with the other protein are associated with the disease.
+% its interaction partner in the HI-II-14 reference interactome is associated
+% with the disease.
 
 interactome = 'IntAct';
 load_processed_data = 1;
 save_processed_data = 1;
+calculate_pvalues = 1;
 processed_data_dir = 'interactome_processed/';
 processed_data_exists = 0;
 if strcmpi(interactome,'HI-II-14')

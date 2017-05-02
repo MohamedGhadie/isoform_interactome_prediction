@@ -8,9 +8,9 @@
 
 load_processed_data = 1;
 save_processed_data = 1;
+calculate_pvalues = 1;
 processed_data_dir = 'interactome_processed/';
 processed_data_exists = 0;
-calculate_pvalues = 0;
 if strcmpi(interactome,'HI-II-14')
     if (load_processed_data == 1) && (exist([processed_data_dir 'HI-II-14_data.mat'], 'file') == 2)
         disp(['Loading interactome processed data from file ' processed_data_dir 'HI-II-14_data.mat']);
