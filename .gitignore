@@ -4,4 +4,4 @@ Data/
 interactome_processed/
 .cache/
 *.gz
-code/.m~
+*.m~
