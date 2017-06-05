@@ -10,26 +10,16 @@
 
 % select interactome: HI-II-14 or IntAct
 interactome = 'HI-II-14';
-
 % keep only interactions reported this many times or more
 numTimesReported = 1;
-
 % remove self interactions,: 1 for yes, 0 otherwise
 removeSelfInteractions = 1;     
-
-% laod processed data (if exists) from .mat file:
-% 1 for yes, 0 to process interactome data from scratch
-load_processed_data = 1;
-
-% save interactome processed data to .mat file: 
-% 1 for yes, 0 otherwise
-save_processed_data = 1;
-
-% Calculate p-values for results: 1 for yes, 0 otherwise
-calculate_pvalues = 0;
-
-% processed data directory where interactome processed data will be saved
-processed_data_dir = 'interactome_processed/';
+% laod processed data (if exists) from .mat file
+0 to process interactome data from scratch
+load_processed_data = 0;        % 1 to laod processed data (if exists) from, 0 to process interactome data from scratch
+save_processed_data = 0;        % 1 to save processed data to data file, 0 otherwise
+calculate_pvalues = 0;          % 1 to calculate p-values, 0 otherwise
+processed_data_dir = 'interactome_processed/';      % directory to store interactoem processed data
 
 % load an process interactome data
 [I, PPIs, spID, genes, domains, DDIs, refDomMap, domRefPos, domAltMap, domAltPos, prSeq, ...
@@ -44,8 +34,6 @@ avgIsoProfileDistPerGene, allDist] ...
 display_isoform_interactome_results(I,numDDImap,numAltIsoforms,numIsoPairs,inIsoInteractome,...
                                     ref_ref_interactions,alt_ref_interactions,numLosingIsoforms,...
                                     fracLosingIsoforms,fracDiffIsoProfilePerGene,avgIsoProfileDistPerGene, allDist);
-
-numGenes = size(I,1);
 
 % label pairs of reference proteins based on isoform interaction profiles
 [pairs,selected,nodiffTargets,subsetTargets,changeoverTargets] = label_iso_partner_pairs(spID,I,domI,domPrI,isoInterDomains,numDDImap,maxIsoform);
@@ -93,6 +81,7 @@ for i = 1:numGOterms
 end
 
 % create protein GO association matrix
+numGenes = size(I,1);
 disp('Creating protein-GO association matrix');
 prGO = uint8(zeros(numGenes,numGOterms));
 for i = 1:numGOterms
@@ -250,13 +239,12 @@ end
 % load GO similarity for protein pairs interacting with protein products of
 % different genes if data file exists
 if (load_processed_data == 1) && (exist(diffGene_gosim_file, 'file') == 2)
-    % load GO similarity for all protein pairs interacting with protein products 
-    % of different genes
+    % load GO similarity of protein partners of products of different genes
     disp(['Loading GO similarity results for partners of protein products of different genes from file ' diffGene_gosim_file]);
     load(diffGene_gosim_file)
 else
-    % calculates GO similarity of all protein pairs interacting with protein
-    % products of different genes (Takes a long time)
+    % calculates GO similarity of all protein pairs that have no
+    % common partner. Takes a long time
     disp('Calculating GO similarity of pairs of proteins interacting with products of different genes');
     numNeighbors = sum(I,2);
     maxsum = cumsum(1:numGenes-1);

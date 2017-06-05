@@ -2,7 +2,7 @@ function [I, PPIs, spID, genes] = load_interactome(interactomeFile, spGeneMapFil
 
 if strcmpi(whichone,'IntAct')
     if ~isempty(dir('interactome_processed/IntAct_human_PPIs.mat'))
-        load IntAct_human_PPIs.mat
+        load interactome_processed/IntAct_human_PPIs.mat
     else
         % read IntAct interactions from file line by line since loading the
         % whole file at once may not be possible due to large size
@@ -66,7 +66,10 @@ if strcmpi(whichone,'IntAct')
         PPIs = PPIs(1:c,:);
         save('interactome_processed/IntAct_human_PPIs.mat', 'PPIs');
     end
-    spID = unique([PPIs(:,1); PPIs(:,2)]);
+    spID1 = [PPIs(:,1); PPIs(:,2)];
+    intactID1 = [PPIs(:,3); PPIs(:,4)];
+    [spID, ind, ~] = unique(spID1);
+    intactID = intactID1(ind);
     numGenes = length(spID);
     
     % load mapping table from Swiss-Prot IDs to gene names
@@ -91,12 +94,10 @@ if strcmpi(whichone,'IntAct')
     disp('Creating protein-protein interaction matrix (This will take a while..)');
     I = uint8(zeros(numGenes,numGenes));
     for i = 1:size(PPIs,1)
-        ind1 = find(strcmpi(spID,PPIs{i,1}),1);
-        ind2 = find(strcmpi(spID,PPIs{i,2}),1);
-        if ~isempty(ind1) && ~isempty(ind2)
-            I(ind1,ind2) = I(ind1,ind2) + 1;
-            I(ind2,ind1) = I(ind1,ind2);
-        end
+        ind1 = strcmpi(spID,PPIs{i,1});
+        ind2 = strcmpi(spID,PPIs{i,2});
+        I(ind1,ind2) = I(ind1,ind2) + 1;
+        I(ind2,ind1) = I(ind1,ind2);
     end
     
     if removeSelfPPIs
@@ -105,30 +106,35 @@ if strcmpi(whichone,'IntAct')
     end
     disp(['Removing interactions reported less than ' num2str(numReported) ' times']);
     I = I>=numReported;    % keep only interactions reported numReported times or more
-
-    % update list of PPIs to keep
-    disp('Updating list of PPIs');
-    keep = zeros(size(PPIs,1),1);
-    for i = 1:numGenes
-        for j = i:numGenes
-            if I(i,j)>0
-                ind = find(strcmpi(PPIs(:,1),spID{i}) & strcmpi(PPIs(:,2),spID{j}),1);
-                if isempty(ind)
-                    ind = find(strcmpi(PPIs(:,1),spID{j}) & strcmpi(PPIs(:,2),spID{i}),1);
-                end
-                keep(ind) = 1;
-            end
-        end
+    
+    reviewedHumanProteins = {};
+    fid = fopen('uniprot_reviewed_human_proteome.list');
+    tline = fgetl(fid);
+    while ischar(tline)
+        reviewedHumanProteins = [reviewedHumanProteins; strtrim(tline)];
+        tline = fgetl(fid);
     end
-    PPIs = PPIs(keep>0,:);
+    fclose(fid);
+    reviewed = ismember(spID,reviewedHumanProteins);
     
     % update list of sp Ids and gene names for selected interactions
-    inI = sum(I)>0;
-    I(~inI,:) = [];
-    I(:,~inI) = [];
+    inI = (sum(I,2)>0) & reviewed;
+    I = I(inI,inI);
     spID = spID(inI);
     genes = genes(inI);
     
+    % update list of PPIs to keep
+    disp('Updating list of PPIs');
+    PPIs = cell(sum(sum(triu(I))),4);
+    c = 0;
+    for i = 1:size(I,1)
+        for j = i:size(I,2)
+            if I(i,j)>0
+                c = c + 1;
+                PPIs(c,:) = {spID{i}, spID{j}, intactID{i}, intactID{j}};
+            end
+        end
+    end
 elseif strcmpi(whichone,'HI-II-14')
     [~,HI_II_14] = xlsread(interactomeFile);
     PPIs = HI_II_14(:,[2 4]);
@@ -175,10 +181,8 @@ elseif strcmpi(whichone,'HI-II-14')
     disp('Creating protein-protein interaction matrix (This will take a while..)');
     I = uint8(zeros(numGenes,numGenes));
     for i = 1:size(PPIentrez,1)
-        id1 = str2double(PPIentrez{i,1});
-        id2 = str2double(PPIentrez{i,2});
-        ind1 = find(entrezID==id1,1);
-        ind2 = find(entrezID==id2,1);
+        ind1 = (entrezID==str2double(PPIentrez{i,1}));
+        ind2 = (entrezID==str2double(PPIentrez{i,2}));
         I(ind1,ind2) = I(ind1,ind2) + 1;
         I(ind2,ind1) = 1;
     end
@@ -191,25 +195,32 @@ elseif strcmpi(whichone,'HI-II-14')
     disp(['Removing interactions reported less than ' num2str(numReported) ' times']);
     I = I>=numReported;    % keep only interactions reported numReported times or more
     
+    reviewedHumanProteins = {};
+    fid = fopen('uniprot_reviewed_human_proteome.list');
+    tline = fgetl(fid);
+    while ischar(tline)
+        reviewedHumanProteins = [reviewedHumanProteins; strtrim(tline)];
+        tline = fgetl(fid);
+    end
+    fclose(fid);
+    
+    % update list of sp Ids and gene names for selected interactions
+    inI = (sum(I,2)>0) & (cellfun(@length,spID)>0);
+    I = I(inI,inI);
+    spID = spID(inI);
+    genes = genes(inI);
+    entrezID = entrezID(inI);
+    
     % update list of PPIs to keep
-    keep = zeros(size(PPIentrez,1),1);
-    for i = 1:numGenes
-        for j = i:numGenes
+    disp('Updating list of PPIs');
+    PPIs = cell(sum(sum(triu(I))),2);
+    c = 0;
+    for i = 1:size(I,1)
+        for j = i:size(I,2)
             if I(i,j)>0
-                ind = find(strcmpi(PPIentrez(:,1),num2str(entrezID(i))) & strcmpi(PPIentrez(:,2),num2str(entrezID(j))),1);
-                if isempty(ind)
-                    ind = find(strcmpi(PPIentrez(:,1),num2str(entrezID(j))) & strcmpi(PPIentrez(:,2),num2str(entrezID(i))),1);
-                end
-                keep(ind) = 1;
+                c = c + 1;
+                PPIs(c,:) = {spID{i},spID{j}};
             end
         end
     end
-    PPIs = PPIentrez(keep>0,:);
-    
-    % update list of sp Ids and gene names for selected interactions
-    inI = sum(I)>0;
-    I(~inI,:) = [];
-    I(:,~inI) = [];
-    spID = spID(inI);
-    genes = genes(inI);
 end

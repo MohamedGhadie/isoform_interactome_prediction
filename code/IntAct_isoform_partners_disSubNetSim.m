@@ -1,4 +1,4 @@
-% This script first predicts the isoform interactome from the HI-II-14 reference
+% This script first predicts the isoform interactome from the IntAct reference
 % interactome. Then it calculates disease subnetwork similarity for pairs
 % of reference proteins interacting with the same subset of isoforms of the same
 % gene, pairs of reference proteins interacting with different subsets of isoforms of
@@ -8,15 +8,6 @@
 % proteins, where two proteins share a disease subnetwork if each protein or
 % its interaction partner in the HI-II-14 reference interactome is associated
 % with the disease.
-
-% select interactome: HI-II-14 or IntAct
-interactome = 'HI-II-14';
-
-% keep only interactions reported this many times or more
-numTimesReported = 1;
-
-% remove self interactions,: 1 for yes, 0 otherwise
-removeSelfInteractions = 1;     
 
 % laod processed data (if exists) from .mat file:
 % 1 for yes, 0 to process interactome data from scratch
@@ -32,6 +23,69 @@ calculate_pvalues = 0;
 % processed data directory where interactome processed data will be saved
 processed_data_dir = 'interactome_processed/';
 
+%-------------------------------------------------------------------------
+% First, create disease subnetwork profiles in the HI-II-14 reference
+% interactome
+disp('Loading and processing HI-II-14 interactome data');
+interactome = 'HI-II-14';
+interactomeFile = 'HI-II-14.xlsx';
+isoformInteractomeFile = [processed_data_dir 'HI-II-14_isoform_interactome'];
+spEntrezMapFile = 'HI-II-14_spEntrezMap.tab';
+numTimesReported = 1;
+removeSelfInteractions = 1;
+[rolland_I, rolland_PPIs, rolland_spID, genes] = load_interactome(interactomeFile, [], spEntrezMapFile, numTimesReported, removeSelfInteractions, interactome);
+rolland_numGenes = size(rolland_I,1);
+rolland_numCommonPartners = double(rolland_I)*double(rolland_I);
+
+% load gene_disease associations
+tdfread('curated_gene_disease_associations.tsv');
+clear geneId sourceId score description diseaseName NofPmids NofSnps
+
+geneName = strtrim(num2cell(geneName,2));
+diseaseId = strtrim(num2cell(diseaseId,2));
+disNames = unique(diseaseId);
+numDis = length(disNames);
+
+% load SwissProt-to-geneName mapping table
+tdfread('mapa_4_uniprot_crossref.tsv');
+disSpGeneMap = [strtrim(num2cell(UniProtKB,2)) strtrim(num2cell(GENE_SYMBOL,2))];
+clear UniProtKB GENE_SYMBOL
+
+% Create gene-disease association matrix for HI-II-14 interactome
+fprintf('\nCreating gene-disease association matrix for HI-II-14 interactome\n');
+rolland_geneDisI = zeros(rolland_numGenes,numDis);
+for i = 1:rolland_numGenes
+    spid = rolland_spID{i};
+    if ~isempty(spid)
+        gn = unique(disSpGeneMap(strcmpi(disSpGeneMap(:,1),spid),2));
+        dis = unique(diseaseId(ismember(geneName,gn)));
+        if ~isempty(dis)
+            rolland_geneDisI(i,ismember(disNames,dis)) = 1;
+        end
+    end
+end
+clear spid gn dis i
+
+% Create disease subnetwork profiles for HI-II-14 interactome
+rolland_netDisProfile = zeros(rolland_numGenes,size(rolland_geneDisI,2));
+for i = 1:rolland_numGenes
+    neighbors = find(rolland_I(i,:));
+    rolland_netDisProfile(i,:) = sum(rolland_geneDisI(sort([i neighbors]),:),1)>0;
+end
+rolland_geneNumDis = sum(rolland_netDisProfile,2);
+
+%-------------------------------------------------------------------------
+% Now process IntAct reference interactome
+
+% select interactome: IntAct
+interactome = 'IntAct';
+
+% keep only interactions reported this many times or more
+numTimesReported = 2;
+
+% remove self interactions,: 1 for yes, 0 otherwise
+removeSelfInteractions = 1;
+
 % load an process interactome data
 [I, PPIs, spID, genes, domains, DDIs, refDomMap, domRefPos, domAltMap, domAltPos, prSeq, ...
 isoSeq, isoNames, altIsoforms, numAltIsoforms, maxIsoform, isoInterDomains, domI, domPrI, ...
@@ -46,7 +100,7 @@ display_isoform_interactome_results(I,numDDImap,numAltIsoforms,numIsoPairs,inIso
                                     ref_ref_interactions,alt_ref_interactions,numLosingIsoforms,...
                                     fracLosingIsoforms,fracDiffIsoProfilePerGene,avgIsoProfileDistPerGene, allDist);
 
-% number of genes
+% number of genes in IntAct reference interactome
 numGenes = size(I,1);
 
 % label pairs of reference proteins based on isoform interaction profiles
@@ -61,22 +115,9 @@ disp([num2str(size(nodiff_pairs,1)) ' protein pairs interacting with the same su
 disp([num2str(size(diff_pairs,1)) ' protein pairs interacting with different subsets of isoforms of the same gene']);
 
 %-------------------------------------------------------------------------
-% load gene_disease associations
-tdfread('curated_gene_disease_associations.tsv');
-clear geneId sourceId score description diseaseName NofPmids NofSnps
-
-geneName = strtrim(num2cell(geneName,2));
-diseaseId = strtrim(num2cell(diseaseId,2));
-disNames = unique(diseaseId);
-numDis = length(disNames);
-
-% load SwissProt-to-geneName mapping table provided by DisGeNET
-tdfread('mapa_4_uniprot_crossref.tsv');
-disSpGeneMap = [strtrim(num2cell(UniProtKB,2)) strtrim(num2cell(GENE_SYMBOL,2))];
-clear UniProtKB GENE_SYMBOL
-
-% create gene-disease association matrix
-fprintf('\nCreating gene-disease association matrix\n');
+% create gene-disease association matrix for proteins in the IntAct
+% reference interactome
+fprintf('\nCreating gene-disease association matrix for genes in IntAct interactome\n');
 geneDisI = zeros(numGenes,numDis);
 for i = 1:numGenes
     spid = spID{i};
@@ -89,80 +130,109 @@ for i = 1:numGenes
     end
 end
 clear spid gn dis i
-
-% number of diseases per gene
-numDis = sum(geneDisI,2);
-disp([num2str(sum(numDis>0)) ' genes associated with at least one disease']);
-disp([num2str(sum(numDis==0)) ' genes associated with no disease']);
-
-% plot disease distribution
-figure
-hist(numDis(numDis>0),20);
-xlabel('Number of diseases');
-ylabel('Number of genes');
-title('Number of diseases per gene');
+geneNumDis = sum(geneDisI,2);
 
 %-------------------------------------------------------------------------
-% calculate disease subnetwork similarity for pairs of proteins interacting
-% with different subsets of isoforms of the same gene
+% calculate disease subnetwork profiles for IntAct reference proteins using
+% their interaction profiles in HI-II-14
+
+rolland_numNeighbors = sum(rolland_I,2);
+intact_numNeighbors = sum(I,2);
+intact_disSubNetProfiles = zeros(size(geneDisI));
+geneNum = zeros(numGenes,1);
+for i = 1:numGenes
+    sp = spID{i};
+    if ~isempty(sp)
+        num = find(strcmpi(rolland_spID,sp),1);
+        if ~isempty(num)
+            geneNum(i) = num;
+        end
+        if geneNum(i)>0
+            intact_disSubNetProfiles(i,:) = (geneDisI(i,:)>0) | (rolland_netDisProfile(geneNum(i),:)>0);
+        else
+            intact_disSubNetProfiles(i,:) = geneDisI(i,:)>0;
+        end
+    end
+end
+geneNumDisSubNet = sum(intact_disSubNetProfiles,2);
+
+%-------------------------------------------------------------------------
+% calculate disease subnetwork similarity for protein pairs interacting
+% with different subsets of isoforms of the same gene in the IntAct isoform
+% interactome using their interaction profiles in HI-II-14
+
 diff_disSim = [];
+diff_numDis = [];
 for i = 1:size(diff_pairs,1)
-    nb1 = I(diff_pairs(i,1),:)>0;
-    nb2 = I(diff_pairs(i,2),:)>0;
-    nb1(diff_pairs(i,1)) = 1;
-    nb2(diff_pairs(i,2)) = 1;
-    p1_disProfile = sum(geneDisI(nb1>0,:),1)>0;
-    p2_disProfile = sum(geneDisI(nb2>0,:),1)>0;
-    p1num = sum(p1_disProfile);
-    p2num = sum(p2_disProfile);
-    if p1num>0 && p2num>0
-        diff_disSim = [diff_disSim 1-sum(p1_disProfile~=p2_disProfile)/sum(p1_disProfile|p2_disProfile)];
+    sp1 = spID{diff_pairs(i,1)};
+    sp2 = spID{diff_pairs(i,2)};
+    if ~isempty(sp1) && ~isempty(sp2)
+        geneNum1 = geneNum(diff_pairs(i,1));
+        geneNum2 = geneNum(diff_pairs(i,2));
+        if geneNum1>0 && geneNum2>0
+            nb1 = rolland_I(geneNum1,:)>0;
+            nb2 = rolland_I(geneNum2,:)>0;
+            nb1(geneNum1) = 1;
+            nb2(geneNum2) = 1;
+            p1_disProfile = (geneDisI(diff_pairs(i,1),:) + sum(rolland_geneDisI(nb1,:),1)) > 0;
+            p2_disProfile = (geneDisI(diff_pairs(i,2),:) + sum(rolland_geneDisI(nb2,:),1)) > 0;
+            p1num = sum(p1_disProfile);
+            p2num = sum(p2_disProfile);
+            if p1num>0 && p2num>0
+                diff_disSim = [diff_disSim 1-sum(p1_disProfile~=p2_disProfile)/sum(p1_disProfile|p2_disProfile)];
+                diff_numDis = [diff_numDis; p1num p2num];
+            end
+        end
     end
 end
 
 %-------------------------------------------------------------------------
-% calculate disease subnetwork similarity for pairs of proteins interacting
-% with the same subset of isoforms of the same gene
+% calculate disease subnetwork similarity for protein pairs interacting
+% with the same subset of isoforms of the same gene in the IntAct isoform
+% interactome using their interaction profiles in HI-II-14
+
 nodiff_disSim = [];
+nodiff_numDis = [];
 for i = 1:size(nodiff_pairs,1)
-    nb1 = I(nodiff_pairs(i,1),:)>0;
-    nb2 = I(nodiff_pairs(i,2),:)>0;
-    nb1(nodiff_pairs(i,1)) = 1;
-    nb2(nodiff_pairs(i,2)) = 1;
-    p1_disProfile = sum(geneDisI(nb1>0,:),1)>0;
-    p2_disProfile = sum(geneDisI(nb2>0,:),1)>0;
-    p1num = sum(p1_disProfile);
-    p2num = sum(p2_disProfile);
-    if p1num>0 && p2num>0
-        nodiff_disSim = [nodiff_disSim 1-sum(p1_disProfile~=p2_disProfile)/sum(p1_disProfile|p2_disProfile)];
+    sp1 = spID{nodiff_pairs(i,1)};
+    sp2 = spID{nodiff_pairs(i,2)};
+    if ~isempty(sp1) && ~isempty(sp2)
+        geneNum1 = geneNum(nodiff_pairs(i,1));
+        geneNum2 = geneNum(nodiff_pairs(i,2));
+        if geneNum1>0 && geneNum2>0
+            nb1 = rolland_I(geneNum1,:)>0;
+            nb2 = rolland_I(geneNum2,:)>0;
+            nb1(geneNum1) = 1;
+            nb2(geneNum2) = 1;
+            p1_disProfile = (geneDisI(nodiff_pairs(i,1),:) + sum(rolland_geneDisI(nb1,:),1)) > 0;
+            p2_disProfile = (geneDisI(nodiff_pairs(i,2),:) + sum(rolland_geneDisI(nb2,:),1)) > 0;
+            p1num = sum(p1_disProfile);
+            p2num = sum(p2_disProfile);
+            if p1num>0 && p2num>0
+                nodiff_disSim = [nodiff_disSim 1-sum(p1_disProfile~=p2_disProfile)/sum(p1_disProfile|p2_disProfile)];
+                nodiff_numDis = [nodiff_numDis; p1num p2num];
+            end
+        end
     end
 end
-clear p1num p2num p1_neighbors p2_neighbors p1_disProfile p2_disProfile
+clear sp1 sp2 geneNum1 geneNum2 p1num p2num p1_disProfile p2_disProfile
 
 %-------------------------------------------------------------------------
 % file directory to load disease subnetwork similarity for protein pairs
 % interacting with protein products of different genes
-diffGeneDisSim_file = [processed_data_dir 'HI-II-14_diffGene_disSubNetSim.mat'];
+diffGeneDisSim_file = [processed_data_dir 'IntAct_diffGene_disSubNetSim.mat'];
 
 % load disease subnetwork similarity for protein pairs interacting with
 % protein products of different genes if data file exists
 if (load_processed_data == 1) && (exist(diffGeneDisSim_file, 'file') == 2)
     disp('Loading disease subnetwork similarity results for pairs of proteins -');
     disp(['interacting with products of different genes from file ' diffGeneDisSim_file]);
-    load(diffGeneDisSim_file)
+    load(diffGeneDisSim_file);
 else
     % calculates disease subnetwork similarity for all protein pairs
     % interacting with protein products of different genes (takes a long time)
     disp('Calculating disease subnetwork similarity for pairs of proteins -');
     disp('interacting with products of different genes');
-    netDisProfile = zeros(numGenes,size(geneDisI,2));
-    for i = 1:numGenes
-        neighbors = find(I(i,:));
-        netDisProfile(i,:) = sum(geneDisI(sort([i neighbors]),:),1)>0;
-    end
-    geneNumDis = sum(netDisProfile,2);
-    
-    numNeighbors = sum(I,2);
     maxsum = cumsum(1:numGenes-1);
     maxnum = maxsum(numGenes-1);
     diffGene_disSim = zeros(1,maxnum);
@@ -172,14 +242,14 @@ else
         if ~mod(i,1000)
             disp(['- Calculated disease subnetwork similarity for ' num2str(i) ' genes out of ' num2str(numGenes) ' genes']);
         end
-        if geneNumDis(i) > 0
-            p1_disProfile = netDisProfile(i,:);
+        if ~isempty(spID{i}) && (geneNum(i) > 0) && (geneNumDisSubNet(i) > 0)
             for j = i+1:numGenes
-                if (geneNumDis(j) > 0) && numCommonPartners(i,j) == 0
-                    c = c + 1;
-                    p2_disProfile = netDisProfile(j,:);
-                    diffGene_disSim(c) = 1-sum(p1_disProfile~=p2_disProfile)/sum(p1_disProfile|p2_disProfile);
-                    diffGene_pairs(c,:) = [i j];
+                if ~isempty(spID{j}) && (geneNum(j)>0) && (geneNumDisSubNet(j) > 0)
+                    if (numCommonPartners(i,j) == 0) && (rolland_numCommonPartners(geneNum(i),geneNum(j)) == 0)
+                        c = c + 1;
+                        diffGene_disSim(c) = 1-sum(intact_disSubNetProfiles(i,:)~=intact_disSubNetProfiles(j,:))/sum(intact_disSubNetProfiles(i,:)|intact_disSubNetProfiles(j,:));
+                        diffGene_pairs(c,:) = [i j];
+                    end
                 end
             end
         end
@@ -187,15 +257,15 @@ else
     diffGene_disSim = diffGene_disSim(1:c);
     diffGene_pairs = diffGene_pairs(1:c,:);
     clear i j c maxsum maxnum
-    
-    if save_processed_data == 1
-        save(diffGeneDisSim_file, 'diffGene_disSim', 'diffGene_pairs');
-        disp('Disease subnetwork similarity results for pairs of proteins -');
-        disp(['interacting with protein products of different genes were saved in file ' diffGeneDisSim_file]);
-    end
 end
 
-disp('Mean fraction of disease subnetwoks shared by protein pairs interacting with:');
+if save_processed_data == 1
+    save(diffGeneDisSim_file, 'diffGene_disSim', 'diffGene_pairs');
+    disp('Disease similarity results for pairs of proteins interacting with -');
+    disp(['protein products of different genes were saved in file ' diffGeneDisSim_file]);
+end
+
+disp('Mean fraction of diseases shared by protein pairs interacting with:');
 disp(['1. same isoforms of the same gene (identical profiles): ' num2str(mean(nodiff_disSim))]);
 disp(['2. different isoforms of the same gene (different profiles): ' num2str(mean(diff_disSim))]);
 disp(['3. protein products of different genes: ' num2str(mean(diffGene_disSim))]);
