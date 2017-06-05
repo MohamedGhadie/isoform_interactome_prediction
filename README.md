@@ -2,7 +2,7 @@
 
 This software package predicts a human isoform interactome from a human reference interactome using the domain-based method DIIP: Domain-based Isoform Interactome Prediction. Given a reference interactome consisting of experimentally observed reference interactions between reference proteins, we first annotate reference protein with structural domains by scanning their sequences using HMMER hmmscan with an E-value cutoff of 10e-5. Next, we annotate interactions in the reference interactome with domain-domain interactions (DDIs), where an interaction is annotated with a DDI if one of the interacting proteins is annotated with one of the domains of the DDI and the other interacting protein is annotated with the other domain of the same DDI. We then predict an isoform interactome from the DDI-annotated reference interactome by predicting isoform-specific interactions for the alternative isoforms of the reference proteins in the DDI-annotated interactome. Given a reference interaction between two reference proteins annotated with a DDI, we predict that an alternative isoform of one of the interacting proteins loses interaction with the partner of that protein if it loses the DDI annotation, otherwise the interaction is retained by that alternative isoform. Alternative isoforms are annotated with structural domains also using HMMER hmmscan with an E-value cutoff of 10e-5.
 
-# File descriptions:
+# File descriptions
 
 File: isoform_partners_go_coexpr.m
 
