@@ -6,16 +6,16 @@
 % for the newly cloned alternative isoforms are then predicted from the
 % DDI-annotated reference interactions using two methods:
 
-% - First method uses reference interactions having full DDI annotations only. 
-% A reference interaction has a full DDI annotation if the newly cloned 
-% protein contains an interacting domain of a DDI and its orfeome interaction 
-% partner contains the other interacting domain of the same DDI. An alternative 
-% isoform of the newly cloned reference protein is then predicted to lose 
-% the interaction if it loses all DDI annotations with the orfeome partner, 
-% otherwise the interaction is retained.
+% - First method uses reference interactions having full DDI annotations only, 
+% whereas the second method uses reference interactions that have either a 
+% full DDI annotation or a partial DDI annotation. A reference interaction has a 
+% partial DDI annotation if the newly cloned protein contains an interacting 
+% domain of a DDI whereas its orfeome interaction partner does not contain 
+% the other interacting domain of the DDI. An alternative isoform of the 
+% newly cloned reference protein is then predicted to lose the interaction 
+% if it loses all of its interacting domains, otherwise the interaction is retained.
 
-% - Second method uses reference interactions that have either a full DDI 
-% annotation or a partial DDI annotation. A reference interaction has a 
+% - Second method uses A reference interaction has a 
 % partial DDI annotation if the newly cloned protein contains an interacting 
 % domain of a DDI whereas its orfeome interaction partner does not contain 
 % the other interacting domain of the DDI. An alternative isoform of the 
