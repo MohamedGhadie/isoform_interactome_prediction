@@ -53,7 +53,8 @@ This code validates the performance of the domain-based isoform interaction pred
 
 # Data file links
 
-- HI-II-14.tsv: http://interactome.dfci.harvard.edu/H_sapiens/download/HI-II-14.tsv
+- HI-II-14.tsv
+	http://interactome.dfci.harvard.edu/H_sapiens/download/HI-II-14.tsv
 - HI-II-14_spEntrezMap.tab: used UniProt ID mapping tool on the Entrez IDs
 - intact.txt and IntAct_spGeneMap.txt: ftp://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/intact.zip
 - 3did_flat.txt: http://3did.irbbarcelona.org/download/current/3did_flat.gz
