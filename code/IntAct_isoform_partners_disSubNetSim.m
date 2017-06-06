@@ -28,7 +28,7 @@ processed_data_dir = 'interactome_processed/';
 % interactome
 disp('Loading and processing HI-II-14 interactome data');
 interactome = 'HI-II-14';
-interactomeFile = 'HI-II-14.xlsx';
+interactomeFile = 'HI-II-14.tsv';
 isoformInteractomeFile = [processed_data_dir 'HI-II-14_isoform_interactome'];
 spEntrezMapFile = 'HI-II-14_spEntrezMap.tab';
 numTimesReported = 1;

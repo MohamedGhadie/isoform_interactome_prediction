@@ -18,7 +18,7 @@ Data files used by this code:
 	
 	If using IntAct reference interactome:
 	- intact.txt: IntAct interactions
-	- IntAct_spGeneMap.txt (SwissProt ID to Gene Name mapping)
+	- IntAct_spGeneMap.txt (SwissProt-to-GeneName mapping)
 		* column 1 (name: From): SwissProt ID
 		* column 2 (name: To):   Gene Name
 	
@@ -39,9 +39,47 @@ Data files used by this code:
 
 This code first predicts the isoform interactome from the HI-II-14 reference interactome. Then it calculates disease subnetwork similarity for pairs of reference proteins interacting with the same subset of isoforms of the same gene, pairs of reference proteins interacting with different subsets of isoforms of the same gene, and pairs of reference proteins interacting with protein products of different genes. Disease subnetwork similarity is calculated as the fraction (Jaccard similarity index) of disease subnetworks shared by two proteins, where two proteins share a disease subnetwork if each protein or its interaction partner in the HI-II-14 reference interactome is associated with the disease.
 
+Data files used by this code:
+	
+	- HI-II-14.tsv (HI-II-14 reference interactome)
+	- HI-II-14_spEntrezMap.tab (SwissProt ID to Entrez ID mapping)
+		* column 1 (name: From): SwissProt ID
+		* column 2 (name: To):   Entrez ID
+	- 3did_flat.txt (3did domain-domain interactions)
+	- domine_interactions.xlsx (DOMINE domain-domain interactions)
+	- hmmer_canonical_full.domtab.txt (hmmscan output table for human reference proteins)
+	- hmmer_isoforms.domtab.txt (hmmscan output table for human alternative isoforms)
+	- human_protein_sequences.tab (human reference protein sequences)
+	- human_protein_can_iso_sequences.fasta (human alternative isoform sequences)
+	- curated_gene_disease_associations.tsv	(gene disease associations from DisGeNET)
+	- mapa_4_uniprot_crossref.tsv (SwissProt-to-GeneName mapping)
+		* column 1 (name: UniProtKB):	SwissProt ID
+		* column 2 (name: GENE_SYMBOL): Gene Name
+
 ### Code: IntAct_isoform_partners_disSubNetSim.m
 
 This code first predicts the isoform interactome from the IntAct reference interactome. Then it calculates disease subnetwork similarity for pairs of reference proteins interacting with the same subset of isoforms of the same gene, pairs of reference proteins interacting with different subsets of isoforms of the same gene, and pairs of reference proteins interacting with protein products of different genes. Disease subnetwork similarity is calculated as the fraction (Jaccard similarity index) of disease subnetworks shared by the two proteins, where two proteins share a disease subnetwork if each protein or its interaction partner in the high-quality HI-II-14 reference interactome is associated with the disease.
+
+Data files used by this code:
+	
+	- HI-II-14.tsv (HI-II-14 reference interactome)
+	- HI-II-14_spEntrezMap.tab (SwissProt ID to Entrez ID mapping)
+		* column 1 (name: From): SwissProt ID
+		* column 2 (name: To):   Entrez ID
+	- intact.txt: IntAct interactions
+	- IntAct_spGeneMap.txt (SwissProt-to-GeneName mapping)
+		* column 1 (name: From): SwissProt ID
+		* column 2 (name: To):   Gene Name
+	- 3did_flat.txt (3did domain-domain interactions)
+	- domine_interactions.xlsx (DOMINE domain-domain interactions)
+	- hmmer_canonical_full.domtab.txt (hmmscan output table for human reference proteins)
+	- hmmer_isoforms.domtab.txt (hmmscan output table for human alternative isoforms)
+	- human_protein_sequences.tab (human reference protein sequences)
+	- human_protein_can_iso_sequences.fasta (human alternative isoform sequences)
+	- curated_gene_disease_associations.tsv	(gene disease associations from DisGeNET)
+	- mapa_4_uniprot_crossref.tsv (SwissProt-to-GeneName mapping)
+		* column 1 (name: UniProtKB):	SwissProt ID
+		* column 2 (name: GENE_SYMBOL): Gene Name
 
 ### Code: validation.m
 
@@ -56,10 +94,7 @@ This code validates the performance of the domain-based isoform interaction pred
 - HI-II-14.tsv
 	- http://interactome.dfci.harvard.edu/H_sapiens/download/HI-II-14.tsv
 
-- HI-II-14_spEntrezMap.tab
-	- used UniProt ID mapping tool on the Entrez IDs
-
-- intact.txt and IntAct_spGeneMap.txt
+- intact.txt
 	- ftp://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/intact.zip
 
 - 3did_flat.txt
@@ -76,3 +111,6 @@ This code validates the performance of the domain-based isoform interaction pred
 
 - E-MTAB-513.tsv.txt
 	- https://www.ebi.ac.uk/gxa/experiments/E-MTAB-513/
+
+- curated_gene_disease_associations.tsv
+	- http://www.disgenet.org/web/DisGeNET/menu/downloads#gdascurated
