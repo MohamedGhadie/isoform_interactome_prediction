@@ -8,8 +8,8 @@ This software package predicts a human isoform interactome from a human referenc
 
 This script first predicts the isoform interactome from the reference interactome, either HI-II-14 or IntAct interactome. Then it calculates GO association similarity and co-expression for pairs of reference proteins interacting with the same subset of isoforms of the same gene, pairs of reference proteins interacting with different subsets of isoforms of the same gene, and pairs of reference proteins interacting with protein products of different genes. GO similarity is calculated as the fraction (Jaccard similarity index) of GO terms shared by the two proteins. Co-expression is calculated using Pearson's correlation coefficient.
 
-#### Data files used by this script:
-	* HI-II-14.xlsx: 
+Data files used by this script:
+    * HI-II-14.xlsx: 
 
 File: HI-II-14_isoform_partners_disSubNetSim.m
 
