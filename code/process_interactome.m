@@ -14,7 +14,7 @@ if strcmpi(interactome,'HI-II-14')
         load([processed_data_dir 'HI-II-14_data.mat']);
     else
         disp('Loading and processing interactome data');
-        interactomeFile = 'HI-II-14.xlsx';
+        interactomeFile = 'HI-II-14.tsv';
         isoformInteractomeFile = [processed_data_dir 'HI-II-14_isoform_interactome.txt'];
         spEntrezMapFile = 'HI-II-14_spEntrezMap.tab';
         [I, PPIs, spID, genes] = load_interactome(interactomeFile, [], spEntrezMapFile, numTimesReported, removeSelfInteractions, interactome);

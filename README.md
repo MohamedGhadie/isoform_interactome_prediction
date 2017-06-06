@@ -11,11 +11,7 @@ This code first predicts the isoform interactome from the reference interactome,
 Data files used by this code:
 	
 	If using HI-II-14 reference interactome:
-	- HI-II-14.xlsx (HI-II-14 reference interactome)
-		* column 1: interacting protein 1 Entrez ID
-		* column 2: interacting protein 1 Gene name
-		* column 3: interacting protein 2 Entrez ID
-		* column 4: interacting protein 2 Gene name
+	- HI-II-14.tsv (HI-II-14 reference interactome)
 	- HI-II-14_spEntrezMap.tab (SwissProt ID to Entrez ID mapping)
 		* column 1 (name: From): SwissProt ID
 		* column 2 (name: To):   Entrez ID
@@ -33,6 +29,11 @@ Data files used by this code:
 	- hmmer_isoforms.domtab.txt (hmmscan output table for human alternative isoforms)
 	- human_protein_sequences.tab (human reference protein sequences)
 	- human_protein_can_iso_sequences.fasta (human alternative isoform sequences)
+	- gene_association.goa_ref_human.xlsx (Gene Ontology associations)
+		May split into two files if MATLAB cannot load at once:
+		- gene_association.goa_ref_human_a.xlsx
+		- gene_association.goa_ref_human_b.xlsx	
+	- E-MTAB-513.tsv.txt (gene tissue expression)
 
 ### Code file: HI-II-14_isoform_partners_disSubNetSim.m
 

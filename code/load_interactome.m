@@ -136,21 +136,22 @@ if strcmpi(whichone,'IntAct')
         end
     end
 elseif strcmpi(whichone,'HI-II-14')
-    [~,HI_II_14] = xlsread(interactomeFile);
-    PPIs = HI_II_14(:,[2 4]);
-    PPIentrez = HI_II_14(:,[1 3]);
+    HI_II_14 = tdfread(interactomeFile);
+    PPIs = [strtrim(mat2cell(HI_II_14.Symbol_A, ones(1,size(HI_II_14.Symbol_A,1)), size(HI_II_14.Symbol_A,2))), ...
+            strtrim(mat2cell(HI_II_14.Symbol_B, ones(1,size(HI_II_14.Symbol_B,1)), size(HI_II_14.Symbol_B,2)))];
+    PPIentrez = [HI_II_14.Entrez_Gene_IDA HI_II_14.Entrez_Gene_IDB];
     
     % compile the list of genes and their entrez IDs from the interactome
     initgenes = [PPIs(:,1); PPIs(:,2)];
     genes = unique(initgenes);
     numGenes = length(genes);
-    initentrez = str2double([PPIentrez(:,1); PPIentrez(:,2)]);
+    initentrez = [PPIentrez(:,1); PPIentrez(:,2)];
     entrezID = zeros(numGenes,1);
     for i = 1:numGenes
         entrezID(i) = initentrez(find(strcmpi(genes{i},initgenes),1));
     end
     
-    % create mapping table from Swiss-Prot to Entrez IDs    
+    % create mapping table from Swiss-Prot to Entrez IDs
     s = tdfread(spEntrezMapFile);
     sp2entrez = {};
     for i = 1:size(s.From,1)
@@ -181,8 +182,8 @@ elseif strcmpi(whichone,'HI-II-14')
     disp('Creating protein-protein interaction matrix (This will take a while..)');
     I = uint8(zeros(numGenes,numGenes));
     for i = 1:size(PPIentrez,1)
-        ind1 = (entrezID==str2double(PPIentrez{i,1}));
-        ind2 = (entrezID==str2double(PPIentrez{i,2}));
+        ind1 = (entrezID==PPIentrez(i,1));
+        ind2 = (entrezID==PPIentrez(i,2));
         I(ind1,ind2) = I(ind1,ind2) + 1;
         I(ind2,ind1) = 1;
     end
@@ -194,15 +195,6 @@ elseif strcmpi(whichone,'HI-II-14')
     
     disp(['Removing interactions reported less than ' num2str(numReported) ' times']);
     I = I>=numReported;    % keep only interactions reported numReported times or more
-    
-    reviewedHumanProteins = {};
-    fid = fopen('uniprot_reviewed_human_proteome.list');
-    tline = fgetl(fid);
-    while ischar(tline)
-        reviewedHumanProteins = [reviewedHumanProteins; strtrim(tline)];
-        tline = fgetl(fid);
-    end
-    fclose(fid);
     
     % update list of sp Ids and gene names for selected interactions
     inI = (sum(I,2)>0) & (cellfun(@length,spID)>0);
