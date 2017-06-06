@@ -53,14 +53,20 @@ This code validates the performance of the domain-based isoform interaction pred
 
 # Data file links
 
-- HI-II-14.tsv
+HI-II-14.tsv
 	- http://interactome.dfci.harvard.edu/H_sapiens/download/HI-II-14.tsv
-- HI-II-14_spEntrezMap.tab: used UniProt ID mapping tool on the Entrez IDs
-- intact.txt and IntAct_spGeneMap.txt: ftp://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/intact.zip
-- 3did_flat.txt: http://3did.irbbarcelona.org/download/current/3did_flat.gz
-- domine_interactions.xlsx: http://domine.utdallas.edu/Domine-2.0/domine-tables-2.0.zip
+HI-II-14_spEntrezMap.tab
+	- used UniProt ID mapping tool on the Entrez IDs
+intact.txt and IntAct_spGeneMap.txt
+	- ftp://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/intact.zip
+3did_flat.txt
+	- http://3did.irbbarcelona.org/download/current/3did_flat.gz
+domine_interactions.xlsx
+	- http://domine.utdallas.edu/Domine-2.0/domine-tables-2.0.zip
 	- rename interaction.xlsx as domine_interactions.xlsx
-- gene_association.goa_ref_human.xlsx: ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/HUMAN///goa_human.gaf.gz
+gene_association.goa_ref_human.xlsx
+	- ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/HUMAN///goa_human.gaf.gz
 	- remove descriptions in beginning and end of file
 	- save as excel file: gene_association.goa_ref_human.xlsx
-- E-MTAB-513.tsv.txt: https://www.ebi.ac.uk/gxa/experiments/E-MTAB-513/
+E-MTAB-513.tsv.txt
+	- https://www.ebi.ac.uk/gxa/experiments/E-MTAB-513/
