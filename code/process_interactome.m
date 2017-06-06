@@ -29,7 +29,7 @@ elseif strcmpi(interactome,'IntAct')
         disp('Loading and processing interactome data');
         interactomeFile = 'intact.txt';
         isoformInteractomeFile = [processed_data_dir 'IntAct_isoform_interactome.txt'];
-        spGeneMapFile = 'IntAct_spGeneMap.tab.txt';
+        spGeneMapFile = 'IntAct_spGeneMap.txt';
         [I, PPIs, spID, genes] = load_interactome(interactomeFile, spGeneMapFile, [], numTimesReported, removeSelfInteractions, interactome);
         outputfile = [processed_data_dir 'IntAct_data.mat'];
     end
@@ -42,7 +42,7 @@ if processed_data_exists == 0
     numPPI = sum(sum(triu(I)));
     numGenes = size(I,1);
     did3File = '3did_flat.txt';
-    domineFile = 'interaction.xlsx';
+    domineFile = 'domine_interactions.xlsx';
     processedDDIfile = [processed_data_dir 'DDIs.txt'];
     disp('Loading domain-domain interactions');
     if exist(processedDDIfile, 'file') == 2
