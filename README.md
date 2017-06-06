@@ -4,7 +4,7 @@ This software package predicts a human isoform interactome from a human referenc
 
 # Code descriptions
 
-### Code file: isoform_partners_go_coexpr.m
+### Code: isoform_partners_go_coexpr.m
 
 This code first predicts the isoform interactome from the reference interactome, either HI-II-14 or IntAct interactome. Then it calculates GO association similarity and co-expression for pairs of reference proteins interacting with the same subset of isoforms of the same gene, pairs of reference proteins interacting with different subsets of isoforms of the same gene, and pairs of reference proteins interacting with protein products of different genes. GO similarity is calculated as the fraction (Jaccard similarity index) of GO terms shared by the two proteins. Co-expression is calculated using Pearson's correlation coefficient.
 
@@ -18,7 +18,7 @@ Data files used by this code:
 	
 	If using IntAct reference interactome:
 	- intact.txt: IntAct interactions
-	- IntAct_spGeneMap.txt
+	- IntAct_spGeneMap.txt (SwissProt ID to Gene Name mapping)
 		* column 1 (name: From): SwissProt ID
 		* column 2 (name: To):   Gene Name
 	
@@ -35,15 +35,15 @@ Data files used by this code:
 		- gene_association.goa_ref_human_b.xlsx	
 	- E-MTAB-513.tsv.txt (gene tissue expression)
 
-### Code file: HI-II-14_isoform_partners_disSubNetSim.m
+### Code: HI-II-14_isoform_partners_disSubNetSim.m
 
 This code first predicts the isoform interactome from the HI-II-14 reference interactome. Then it calculates disease subnetwork similarity for pairs of reference proteins interacting with the same subset of isoforms of the same gene, pairs of reference proteins interacting with different subsets of isoforms of the same gene, and pairs of reference proteins interacting with protein products of different genes. Disease subnetwork similarity is calculated as the fraction (Jaccard similarity index) of disease subnetworks shared by two proteins, where two proteins share a disease subnetwork if each protein or its interaction partner in the HI-II-14 reference interactome is associated with the disease.
 
-### Code file: IntAct_isoform_partners_disSubNetSim.m
+### Code: IntAct_isoform_partners_disSubNetSim.m
 
 This code first predicts the isoform interactome from the IntAct reference interactome. Then it calculates disease subnetwork similarity for pairs of reference proteins interacting with the same subset of isoforms of the same gene, pairs of reference proteins interacting with different subsets of isoforms of the same gene, and pairs of reference proteins interacting with protein products of different genes. Disease subnetwork similarity is calculated as the fraction (Jaccard similarity index) of disease subnetworks shared by the two proteins, where two proteins share a disease subnetwork if each protein or its interaction partner in the high-quality HI-II-14 reference interactome is associated with the disease.
 
-### Code file: validation.m
+### Code: validation.m
 
 This code validates the performance of the domain-based isoform interaction prediction method on the experimental dataset of Yang et al. (2016). Interactions between Orfeome proteins and newly cloned reference proteins are used as the reference interactome and domain-domain interactions are mapped onto these reference interactions. Interactions for the newly cloned alternative isoforms are then predicted from the DDI-annotated reference interactions using two methods:
 
@@ -51,3 +51,22 @@ This code validates the performance of the domain-based isoform interaction pred
 
 - Second method uses reference interactions that have either a full DDI annotation or a partial DDI annotation. A reference interaction has a partial DDI annotation if the newly cloned protein contains an interacting domain of a DDI whereas its orfeome interaction partner does not contain the other interacting domain of the DDI. An alternative isoform of the newly cloned reference protein is then predicted to lose the interaction if it loses all of its interacting domains, otherwise the interaction is retained.
 
+# Data file links
+
+- HI-II-14.tsv (HI-II-14 reference interactome)
+	http://interactome.dfci.harvard.edu/H_sapiens/download/HI-II-14.tsv
+- HI-II-14_spEntrezMap.tab (SwissProt ID to Entrez ID mapping)
+	Used UniProt ID mapping tool on the Entrez IDs
+- intact.txt and IntAct_spGeneMap.txt
+	ftp://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/intact.zip
+- 3did_flat.txt
+	http://3did.irbbarcelona.org/download/current/3did_flat.gz
+- domine_interactions.xlsx
+	http://domine.utdallas.edu/Domine-2.0/domine-tables-2.0.zip
+	- rename interaction.xlsx as domine_interactions.xlsx
+- gene_association.goa_ref_human.xlsx
+	ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/HUMAN///goa_human.gaf.gz
+	- remove descriptions in beginning and end of file
+	- save as excel file: gene_association.goa_ref_human.xlsx
+- E-MTAB-513.tsv.txt
+	https://www.ebi.ac.uk/gxa/experiments/E-MTAB-513/
