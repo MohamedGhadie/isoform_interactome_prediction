@@ -89,6 +89,16 @@ This code validates the performance of the domain-based isoform interaction pred
 
 - Second method uses reference interactions that have either a full DDI annotation or a partial DDI annotation. A reference interaction has a partial DDI annotation if the newly cloned protein contains an interacting domain of a DDI whereas its orfeome interaction partner does not contain the other interacting domain of the DDI. An alternative isoform of the newly cloned reference protein is then predicted to lose the interaction if it loses all of its interacting domains, otherwise the interaction is retained.
 
+Data files used by this code:
+	
+	- ts2b.tsv (Yang et al. 2016 experimental isoform interactome)
+	- horf81_cloneInfo20120427.fa.txt (Human Orfeome protein sequences)
+	- hmmscan_ref_output_e10-3.domtab (hmmscan output table for newly cloned reference isoforms in experimental isoform interactome)
+	- hmmscan_alt_output_e10-3.domtab (hmmscan output table for newly cloned alternative isoforms in experimental isoform interactome)
+	- hmmscan_orf_output_e10-3.domtab (hmmscan output table for human Orfeome proteins)
+	- 3did_flat.txt (3did domain-domain interactions)
+	- domine_interactions.xlsx (DOMINE domain-domain interactions)
+
 # Data file links
 
 - HI-II-14.tsv
@@ -114,3 +124,11 @@ This code validates the performance of the domain-based isoform interaction pred
 
 - curated_gene_disease_associations.tsv
 	- http://www.disgenet.org/web/DisGeNET/menu/downloads#gdascurated
+
+- ts2b.tsv
+	- request from authors of Yang et al. (Cell 2016)
+	- alternatively, the experimental isoform interactome is provided in the supplementary material of Yang et al. (Cell 2016) in a different format
+
+- horf81_cloneInfo20120427.fa.txt
+	- request from authors of Yang et al. (Cell 2016)
+	- alternatively, the human Orfeome proteins are available from http://horfdb.dfci.harvard.edu/index.php?page=toolsdata. File may differ in format and size
