@@ -137,12 +137,12 @@ Data files used by this code:
 
 Command for HMMER hmmscan:
 
-hmmscan --noali -o hmmscan_output.txt --acc --domtblout hmmer_output.domtab -E 1e-5 --domE 1e-5 Pfam-A.hmm sequence_file.fasta
+	hmmscan --noali -o hmmscan_output.txt --acc --domtblout hmmer_output.domtab -E 1e-5 --domE 1e-5 Pfam-A.hmm sequence_file.fasta
 
-- Example first line and headings for hmmscan output table file for reference proteins:
+Example first line and headings for hmmscan output table file for reference proteins:
 
-{\#                                                                            --- full sequence --- -------------- this domain -------------   hmm coord   ali coord   env coord
-\# target name        accession   tlen query name           accession   qlen   E-value  score  bias   #  of  c-Evalue  i-Evalue  score  bias  from    to  from    to  from    to  acc description of target
+{#                                                                            --- full sequence --- -------------- this domain -------------   hmm coord   ali coord   env coord
+# target name        accession   tlen query name           accession   qlen   E-value  score  bias   #  of  c-Evalue  i-Evalue  score  bias  from    to  from    to  from    to  acc description of target
 #------------------- ---------- ----- -------------------- ---------- ----- --------- ------ ----- --- --- --------- --------- ------ ----- ----- ----- ----- ----- ----- ----- ---- ---------------------
 14-3-3               PF00244.16   231 P31946               -            246  2.8e-113  377.0   9.7   1   1    2e-117  3.2e-113  376.8   9.7     2   230     7   235     6   236 0.99 14-3-3 protein}
 
