@@ -139,13 +139,13 @@ Command for HMMER hmmscan:
 hmmscan --noali -o hmmscan_output.txt --acc --domtblout hmmer_output.domtab -E 1e-5 --domE 1e-5 Pfam-A.hmm sequence_file.fasta
 
 - Example first line and headings for hmmscan output table file for reference proteins:
-#                                                                            --- full sequence --- -------------- this domain -------------   hmm coord   ali coord   env coord
+\#                                                                            --- full sequence --- -------------- this domain -------------   hmm coord   ali coord   env coord
 # target name        accession   tlen query name           accession   qlen   E-value  score  bias   #  of  c-Evalue  i-Evalue  score  bias  from    to  from    to  from    to  acc description of target
 #------------------- ---------- ----- -------------------- ---------- ----- --------- ------ ----- --- --- --------- --------- ------ ----- ----- ----- ----- ----- ----- ----- ---- ---------------------
 14-3-3               PF00244.16   231 P31946               -            246  2.8e-113  377.0   9.7   1   1    2e-117  3.2e-113  376.8   9.7     2   230     7   235     6   236 0.99 14-3-3 protein
 
 - Example first line and headings for hmmscan output table file for alternative isoforms:
-#                                                                            --- full sequence --- -------------- this domain -------------   hmm coord   ali coord   env coord
+\#                                                                            --- full sequence --- -------------- this domain -------------   hmm coord   ali coord   env coord
 # target name        accession   tlen query name           accession   qlen   E-value  score  bias   #  of  c-Evalue  i-Evalue  score  bias  from    to  from    to  from    to  acc description of target
 #------------------- ---------- ----- -------------------- ---------- ----- --------- ------ ----- --- --- --------- --------- ------ ----- ----- ----- ----- ----- ----- ----- ---- ---------------------
 AATF-Che1            PF13339.4    138 sp|Q9JKX4-2|AATF_MOUSE -            411   9.9e-31  107.1   0.2   1   1     3e-34   2.4e-30  105.9   0.2    14   138    85   224    81   224 0.93 Apoptosis antagonizing transcription factor
