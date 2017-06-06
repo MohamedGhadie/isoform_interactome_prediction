@@ -133,7 +133,7 @@ Data files used by this code:
 	- request from authors of Yang et al. (Cell 2016)
 	- alternatively, the human Orfeome proteins are available from http://horfdb.dfci.harvard.edu/index.php?page=toolsdata. File may differ in format and size
 
-# Data file format
+# Data file formats
 
 Command for HMMER hmmscan:
 
