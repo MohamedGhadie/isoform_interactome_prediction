@@ -9,10 +9,10 @@
 % Pearson's correlation.
 
 % select interactome: HI-II-14 or IntAct
-interactome = 'HI-II-14';
+interactome = 'IntAct';
 
 % keep only interactions reported this many times or more
-numTimesReported = 1;
+numTimesReported = 2;
 
 % remove self interactions,: 1 for yes, 0 otherwise
 removeSelfInteractions = 1;     
@@ -26,7 +26,7 @@ load_processed_data = 1;
 save_processed_data = 1;
 
 % Calculate p-values for results: 1 for yes, 0 otherwise
-calculate_pvalues = 0;
+calculate_pvalues = 1;
 
 % processed data directory where interactome processed data will be saved
 processed_data_dir = 'interactome_processed/';

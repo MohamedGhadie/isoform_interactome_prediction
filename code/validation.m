@@ -180,7 +180,7 @@ end
 %-------------------------------------------------------------------------
 % load domain-domain interactions
 
-domineFile = 'domine_interaction.xlsx';
+domineFile = 'domine_interactions.xlsx';
 did3File = '3did_flat.txt';
 if (exist(domineFile, 'file') == 2) && (exist(did3File, 'file') == 2)
     disp('Loading domain-domain interactions');

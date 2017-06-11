@@ -159,7 +159,7 @@ elseif strcmpi(whichone,'HI-II-14')
         sp2entrez{i,2} = num2str(s.To(i));
     end
     % Create list of Swiss-Prot IDs for all genes in the interactome
-    disp('Finding Swiss-Prot IDs for all genes');
+    disp('Finding Swiss-Prot IDs for all genes. Genes with multiple Swiss-Prot IDs will not be annotated');
     matches = zeros(numGenes,1);
     spID = cell(numGenes,1);
     for i = 1:numGenes
@@ -167,7 +167,6 @@ elseif strcmpi(whichone,'HI-II-14')
         if ~isempty(ind)
             matches(i) = length(ind);
             if length(ind) > 1
-                disp(['Multiple SwissProt IDs found for gene ' num2str(i) '. Gene will not be annotated.']);
                 spID{i} = '';
             else
                 spID{i} = sp2entrez{ind,1};
