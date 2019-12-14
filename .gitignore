@@ -2,6 +2,7 @@
 __pycache__/
 Data/
 interactome_processed/
+paper/
 .cache/
 *.gz
 *.m~
